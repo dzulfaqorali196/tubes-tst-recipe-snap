@@ -57,7 +57,7 @@ export default function RiwayatPage() {
               recipeData = JSON.parse(recipeData);
             } catch (e) {
               console.error('Failed to parse recipe_data:', e);
-              recipeData = { title: 'Resep Tanpa Judul', ingredients: [], instructions: [] };
+              recipeData = { name: 'Resep Tanpa Judul', confidence: 0, instructions: [], ingredients: [] };
             }
           }
 
@@ -66,13 +66,11 @@ export default function RiwayatPage() {
             id: item.id,
             created_at: item.created_at,
             recipe_data: {
-              name: recipeData?.title || 'Resep Tanpa Judul',
-              confidence: 1.0, // Default confidence
+              name: typeof recipeData?.name === 'string' ? recipeData.name : 'Resep Tanpa Judul',
+              confidence: typeof recipeData?.confidence === 'number' ? recipeData.confidence : 0,
               instructions: Array.isArray(recipeData?.instructions) ? recipeData.instructions : []
             },
-            ingredients: Array.isArray(item.ingredients) 
-              ? item.ingredients.map((ing: any) => ing.name || ing).filter(Boolean)
-              : []
+            ingredients: Array.isArray(recipeData?.ingredients) ? recipeData.ingredients : []
           };
 
           console.log('Transformed item:', transformed); // Debug log
