@@ -59,8 +59,8 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
   const handleShare = async (recipe: Recipe) => {
     try {
       await navigator.share({
-        title: recipe.name,
-        text: `Cek resep ${recipe.name} ini!`,
+        title: recipe.title,
+        text: `Cek resep ${recipe.title} ini!`,
         url: window.location.href
       });
       if (user) {
@@ -160,7 +160,9 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
 
       const recipesWithIds = response.data.recipes.map((recipe: Recipe) => ({
         ...recipe,
-        id: uuidv4()
+        id: uuidv4(),
+        title: recipe.name || recipe.title,
+        name: undefined
       }));
 
       if (recipesWithIds.length === 0) {
@@ -169,7 +171,15 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
 
       setRecipes(recipesWithIds);
       if (user) {
-        await addToHistory(recipesWithIds[0], ingredients, user.id);
+        const recipeToSave = {
+          ...recipesWithIds[0],
+          title: recipesWithIds[0].name || recipesWithIds[0].title,
+          ingredients: recipesWithIds[0].ingredients || [],
+          instructions: recipesWithIds[0].instructions || [],
+          created_at: new Date().toISOString(),
+          user_id: user.id
+        };
+        await addToHistory(recipeToSave, ingredients, user.id);
       }
       
       // Update analysis results dengan resep baru
@@ -267,11 +277,11 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
             key={recipe.id}
             className="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow"
           >
-            {recipe.image && (
+            {recipe.image_url && (
               <div className="aspect-w-16 aspect-h-9">
                 <img
-                  src={recipe.image}
-                  alt={recipe.name}
+                  src={recipe.image_url}
+                  alt={recipe.title}
                   className="object-cover w-full h-48"
                 />
               </div>
@@ -279,7 +289,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
-                  {recipe.name}
+                  {recipe.title}
                 </h3>
                 <div className="flex gap-2">
                   <button
@@ -292,12 +302,6 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
                   </button>
                 </div>
               </div>
-              
-              {recipe.description && (
-                <p className="text-sm text-gray-500 mb-4">
-                  {recipe.description}
-                </p>
-              )}
               
               <div className="space-y-4">
                 <div>

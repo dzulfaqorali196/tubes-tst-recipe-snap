@@ -5,12 +5,20 @@ export interface User {
   }
   
   export interface Recipe {
-    id?: string;
-    name: string;
-    description: string;
+    id: string;
+    title: string;
+    name?: string;
     ingredients: string[];
     instructions: string[];
-    image?: string;
+    image_url?: string;
+    created_at: string;
+    user_id: string;
+    cooking_time?: number;
+    difficulty?: 'mudah' | 'sedang' | 'sulit';
+    cuisine_type?: string;
+    serving_size?: number;
+    calories?: number;
+    tags?: string[];
   }
   
   export interface AnalyzedIngredient {

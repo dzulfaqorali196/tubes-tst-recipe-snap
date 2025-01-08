@@ -19,11 +19,11 @@ interface TransformedRecipeHistory {
   id: string;
   created_at: string;
   recipe_data: {
-    name: string;
-    confidence: number;
+    title: string;
+    ingredients: string[];
     instructions: string[];
   };
-  ingredients: string[];
+  ingredients: { name: string; confidence: number }[];
 }
 
 export default function RiwayatPage() {
@@ -50,7 +50,7 @@ export default function RiwayatPage() {
         console.log('Raw data from DB:', data); // Debug log
 
         const transformedData = (data || []).map(item => {
-          // Parse recipe_data
+          // Parse recipe_data if it's a string
           let recipeData = item.recipe_data;
           if (typeof recipeData === 'string') {
             try {
@@ -66,12 +66,17 @@ export default function RiwayatPage() {
             id: item.id,
             created_at: item.created_at,
             recipe_data: {
-              name: recipeData?.title || 'Resep Tanpa Judul',
-              confidence: 1.0, // Default confidence
+              title: recipeData?.title || recipeData?.name || 'Resep Tanpa Judul',
+              ingredients: Array.isArray(recipeData?.ingredients) ? recipeData.ingredients : [],
               instructions: Array.isArray(recipeData?.instructions) ? recipeData.instructions : []
             },
             ingredients: Array.isArray(item.ingredients) 
-              ? item.ingredients.map((ing: any) => ing.name || ing).filter(Boolean)
+              ? item.ingredients.map((ing: any) => {
+                  if (typeof ing === 'string') {
+                    return { name: ing, confidence: 1.0 };
+                  }
+                  return ing;
+                })
               : []
           };
 
@@ -134,7 +139,7 @@ export default function RiwayatPage() {
                         <Clock className="h-5 w-5 text-gray-400" />
                         <div>
                           <h3 className="font-medium text-gray-900">
-                            {item.recipe_data.name}
+                            {item.recipe_data.title}
                           </h3>
                           <p className="text-sm text-gray-500">
                             {new Date(item.created_at).toLocaleDateString('id-ID', {
@@ -159,19 +164,11 @@ export default function RiwayatPage() {
                     
                     {expandedItems.includes(item.id) && (
                       <div className="p-4 border-t">
-                        {item.recipe_data.confidence > 0 && (
-                          <div className="mb-4">
-                            <p className="text-sm text-gray-500">
-                              Tingkat Keyakinan: {(item.recipe_data.confidence * 100).toFixed(1)}%
-                            </p>
-                          </div>
-                        )}
-                        
                         <div className="mb-4">
                           <h4 className="font-medium text-gray-900 mb-2">Bahan-bahan:</h4>
-                          {item.ingredients && item.ingredients.length > 0 ? (
+                          {item.recipe_data.ingredients && item.recipe_data.ingredients.length > 0 ? (
                             <ul className="list-disc list-inside space-y-1">
-                              {item.ingredients.map((ingredient: string, index: number) => (
+                              {item.recipe_data.ingredients.map((ingredient: string, index: number) => (
                                 <li key={index} className="text-gray-700">
                                   {ingredient}
                                 </li>
