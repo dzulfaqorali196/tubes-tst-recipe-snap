@@ -173,12 +173,15 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
       if (user) {
         const recipeToSave = {
           ...recipesWithIds[0],
-          title: recipesWithIds[0].name || recipesWithIds[0].title,
+          id: recipesWithIds[0].id,
+          title: recipesWithIds[0].title || recipesWithIds[0].name || 'Resep Tanpa Judul',
           ingredients: recipesWithIds[0].ingredients || [],
           instructions: recipesWithIds[0].instructions || [],
+          image_url: recipesWithIds[0].image_url,
           created_at: new Date().toISOString(),
           user_id: user.id
         };
+        console.log('Recipe to save:', recipeToSave);
         await addToHistory(recipeToSave, ingredients, user.id);
       }
       

@@ -16,12 +16,21 @@ export async function addToHistory(
       throw new Error('Data tidak lengkap untuk menambahkan ke riwayat');
     }
 
+    const formattedRecipe = {
+      ...recipe,
+      title: recipe.title || recipe.name || 'Resep Tanpa Judul',
+      ingredients: recipe.ingredients || [],
+      instructions: recipe.instructions || [],
+    };
+
     const historyEntry = {
       user_id: userId,
-      recipe_data: recipe,
+      recipe_data: formattedRecipe,
       ingredients: ingredients,
       created_at: new Date().toISOString()
     };
+
+    console.log('Saving history entry:', historyEntry);
 
     const { error } = await supabase
       .from('recipe_history')
@@ -61,12 +70,26 @@ export async function getHistory(userId: string): Promise<HistoryEntry[]> {
       console.error('Database error:', error);
       throw error;
     }
+
+    console.log('Raw history data:', data);
     
-    return data.map(item => ({
-      recipe: item.recipe_data as Recipe,
-      ingredients: item.ingredients as { name: string; confidence: number }[],
-      created_at: item.created_at
-    }));
+    const formattedData = data.map(item => {
+      const recipeData = item.recipe_data as Recipe;
+      return {
+        recipe: {
+          ...recipeData,
+          title: recipeData.title || recipeData.name || 'Resep Tanpa Judul',
+          ingredients: recipeData.ingredients || [],
+          instructions: recipeData.instructions || [],
+          image_url: recipeData.image_url || undefined
+        },
+        ingredients: item.ingredients as { name: string; confidence: number }[],
+        created_at: item.created_at
+      };
+    });
+
+    console.log('Formatted history data:', formattedData);
+    return formattedData;
   } catch (error) {
     console.error('Error fetching history:', error);
     toast.error('Gagal mengambil riwayat');
