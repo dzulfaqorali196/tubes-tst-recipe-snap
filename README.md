@@ -443,6 +443,7 @@ Aplikasi ini di-deploy menggunakan Railway dengan konfigurasi:
 - Automatic deployment dari branch main
 - Container-based deployment dengan Docker
 
+
 ## 📁 Struktur Proyek
 ```
 recipe-snap/
