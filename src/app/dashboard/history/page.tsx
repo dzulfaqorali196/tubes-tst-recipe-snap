@@ -88,7 +88,7 @@ export default function HistoryPage() {
               <div className="p-6">
                 <div className="mb-4">
                   <h3 className="text-lg font-medium text-gray-900">
-                    {entry.recipe.name}
+                    {entry.recipe.title || 'Resep Tanpa Judul'}
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
                     {new Date(entry.created_at).toLocaleDateString('id-ID', {
@@ -102,6 +102,32 @@ export default function HistoryPage() {
                 </div>
 
                 <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Bahan-bahan:</h4>
+                    {entry.recipe.ingredients && entry.recipe.ingredients.length > 0 ? (
+                      <ul className="list-disc list-inside space-y-1">
+                        {entry.recipe.ingredients.map((ingredient, idx) => (
+                          <li key={idx} className="text-gray-700">
+                            {ingredient}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500">Tidak ada bahan yang tercatat</p>
+                    )}
+                  </div>
+
+                  {entry.recipe.instructions && entry.recipe.instructions.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Cara Membuat:</h4>
+                      <ol className="list-decimal list-inside space-y-1">
+                        {entry.recipe.instructions.map((step, idx) => (
+                          <li key={idx} className="text-gray-700">{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Bahan Terdeteksi:</h4>
                     <div className="flex flex-wrap gap-2">
