@@ -76,10 +76,10 @@ export default function HistoryPage() {
               key={index}
               className="bg-white overflow-hidden shadow rounded-lg"
             >
-              {entry.recipe.image && (
+              {entry.recipe.image_url && (
                 <div className="aspect-w-16 aspect-h-9">
                   <img
-                    src={entry.recipe.image}
+                    src={entry.recipe.image_url}
                     alt={entry.recipe.name}
                     className="object-cover w-full h-48"
                   />
