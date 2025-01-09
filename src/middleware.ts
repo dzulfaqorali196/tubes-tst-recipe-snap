@@ -5,19 +5,7 @@ import { Database } from './lib/database.types';
 
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient<Database>({ 
-    req: request, 
-    res,
-    options: {
-      cookies: {
-        name: 'sb-auth',
-        lifetime: 60 * 60 * 24 * 7, // 1 week
-        domain: request.nextUrl.hostname,
-        path: '/',
-        sameSite: 'lax'
-      }
-    }
-  });
+  const supabase = createMiddlewareClient<Database>({ req: request, res });
 
   const {
     data: { session },
