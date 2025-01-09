@@ -3,13 +3,15 @@
 import axios from 'axios';
 import { Recipe } from '@/types';
 
+// Fallback values untuk production
+const RECIPE_API_URL = process.env.NEXT_PUBLIC_RECIPE_API_URL || 'https://smart-health-tst.up.railway.app/api/recipes';
+const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY || 'a75f3b2e9c1d6h8j4k2m7n5p3q6r9s1t4u8v2w6x3y5z0';
+
 console.log('Debug - All env:', {
   NEXT_PUBLIC_RECIPE_API_URL: process.env.NEXT_PUBLIC_RECIPE_API_URL,
-  NODE_ENV: process.env.NODE_ENV
+  NODE_ENV: process.env.NODE_ENV,
+  USING_FALLBACK: !process.env.NEXT_PUBLIC_RECIPE_API_URL
 });
-
-const RECIPE_API_URL = process.env.NEXT_PUBLIC_RECIPE_API_URL || '';
-const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY || '';
 
 // Tambahan logging
 console.log('Debug - Raw RECIPE_API_URL:', process.env.NEXT_PUBLIC_RECIPE_API_URL);
