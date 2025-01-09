@@ -26,15 +26,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const getUser = async () => {
       try {
+        console.log('Checking session...');
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
-          console.error('Error:', error.message);
+          console.error('Session error:', error.message);
           setUser(null);
         } else {
+          console.log('Session status:', session ? 'Active' : 'No session');
           setUser(session?.user ?? null);
         }
       } catch (error) {
-        console.error('Unexpected error:', error);
+        console.error('Unexpected error during session check:', error);
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event);
       setUser(session?.user ?? null);
       setIsLoading(false);
     });
@@ -56,11 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setIsLoading(true);
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Sign out error:', error.message);
+        return;
+      }
+      console.log('Successfully signed out');
       setUser(null);
       router.push('/auth');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error during sign out:', error);
     } finally {
       setIsLoading(false);
     }

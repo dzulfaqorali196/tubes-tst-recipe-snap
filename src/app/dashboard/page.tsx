@@ -12,9 +12,13 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [analysisKey, setAnalysisKey] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('Dashboard mount - Auth state:', { user, isLoading });
+    
     if (!isLoading && !user) {
+      console.log('No user found, redirecting to auth...');
       router.push('/auth');
     }
   }, [user, isLoading, router]);
@@ -22,6 +26,17 @@ export default function DashboardPage() {
   const handleAnalysisComplete = () => {
     setAnalysisKey(prev => prev + 1);
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 p-4 rounded-md">
+          <h3 className="text-red-800 font-medium">Error</h3>
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
