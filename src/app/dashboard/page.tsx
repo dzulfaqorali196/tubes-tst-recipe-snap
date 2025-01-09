@@ -4,15 +4,36 @@
 import { useAuth } from '@/contexts/AuthContexts';
 import ImageUploader from '@/components/image/ImageUploader';
 import StatsOverview from '@/components/dashboard/StatsOverview';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
   const [analysisKey, setAnalysisKey] = useState(0);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/auth');
+    }
+  }, [user, isLoading, router]);
 
   const handleAnalysisComplete = () => {
     setAnalysisKey(prev => prev + 1);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
