@@ -6,6 +6,9 @@ import { Recipe } from '@/types';
 const RECIPE_API_URL = process.env.NEXT_PUBLIC_RECIPE_API_URL as string;
 const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY as string;
 
+console.log('Debug - RECIPE_API_URL:', RECIPE_API_URL);
+console.log('Debug - RECIPE_API_KEY exists:', !!RECIPE_API_KEY);
+
 if (!RECIPE_API_URL || !RECIPE_API_KEY) {
   throw new Error('Recipe API configuration is missing');
 }
