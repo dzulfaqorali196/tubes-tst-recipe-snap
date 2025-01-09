@@ -25,6 +25,12 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# Add environment variables needed for build
+ARG AZURE_COMPUTER_VISION_KEY
+ARG AZURE_COMPUTER_VISION_ENDPOINT
+ENV AZURE_COMPUTER_VISION_KEY=$AZURE_COMPUTER_VISION_KEY
+ENV AZURE_COMPUTER_VISION_ENDPOINT=$AZURE_COMPUTER_VISION_ENDPOINT
+
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -54,5 +60,9 @@ EXPOSE 3000
 
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
+
+# Add runtime environment variables
+ENV AZURE_COMPUTER_VISION_KEY=$AZURE_COMPUTER_VISION_KEY
+ENV AZURE_COMPUTER_VISION_ENDPOINT=$AZURE_COMPUTER_VISION_ENDPOINT
 
 CMD ["node", "server.js"] 
