@@ -13,19 +13,25 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          ingredients: { name: string; confidence: number }[];
+          image_path: string | null;
+          image_url: string | null;
+          ingredients: Json;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          ingredients: { name: string; confidence: number }[];
+          image_path?: string | null;
+          image_url?: string | null;
+          ingredients: Json;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          ingredients?: { name: string; confidence: number }[];
+          image_path?: string | null;
+          image_url?: string | null;
+          ingredients?: Json;
           created_at?: string;
         };
       };
@@ -56,22 +62,31 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          recipe_data: any;
+          recipe_data: Json;
           shared_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          recipe_data: any;
+          recipe_data: Json;
           shared_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          recipe_data?: any;
+          recipe_data?: Json;
           shared_at?: string;
         };
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
     };
   };
 } 

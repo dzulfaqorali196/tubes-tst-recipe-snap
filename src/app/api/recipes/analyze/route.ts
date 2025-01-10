@@ -79,6 +79,33 @@ export async function POST(request: Request) {
     const base64Image = buffer.toString('base64');
     console.log('Image converted to base64, length:', base64Image.length);
 
+    // Upload image to storage first
+    console.log('Uploading image to storage...');
+    const fileName = `${Date.now()}-${image.name}`;
+    const filePath = `public/${fileName}`;
+    
+    const { error: uploadError, data: uploadData } = await supabase.storage
+      .from('food-images')
+      .upload(filePath, image, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return NextResponse.json(
+        { error: 'Gagal mengunggah gambar' },
+        { status: 500 }
+      );
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('food-images')
+      .getPublicUrl(filePath);
+
+    console.log('Image uploaded successfully. Public URL:', publicUrl);
+
     // Analyze image
     try {
       console.log('Starting image analysis...');
@@ -97,13 +124,19 @@ export async function POST(request: Request) {
         .from('image_analysis')
         .insert({
           user_id: session.user.id,
+          image_path: filePath,
+          image_url: publicUrl,
           ingredients: ingredients,
-          created_at: new Date().toISOString(),
-          image_url: null
+          created_at: new Date().toISOString()
         });
 
       if (dbError) {
         console.error('Database error:', dbError);
+        // Delete uploaded image if database insert fails
+        await supabase.storage
+          .from('food-images')
+          .remove([filePath]);
+          
         return NextResponse.json(
           { error: 'Gagal menyimpan hasil analisis' },
           { status: 500 }
@@ -115,16 +148,21 @@ export async function POST(request: Request) {
         success: true,
         data: {
           ingredients: ingredients,
+          image_url: publicUrl,
           timestamp: new Date().toISOString()
         }
       });
     } catch (analysisError) {
       console.error('Image analysis error:', analysisError);
+      // Delete uploaded image if analysis fails
+      await supabase.storage
+        .from('food-images')
+        .remove([filePath]);
+        
       const errorMessage = analysisError instanceof Error 
         ? analysisError.message 
         : 'Gagal menganalisis gambar';
       
-      // Tambahkan informasi error yang lebih detail untuk debugging
       const errorDetails = {
         message: errorMessage,
         type: analysisError instanceof Error ? analysisError.name : typeof analysisError,
