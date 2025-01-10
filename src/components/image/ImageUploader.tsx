@@ -59,19 +59,6 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
     }
   };
 
-  const handleError = (error: any) => {
-    console.error('Error during analysis:', error);
-    
-    // Handle CORS error
-    if (error.message?.includes('CORS')) {
-      toast.error('Terjadi masalah koneksi ke server resep. Mohon coba lagi nanti.');
-      return;
-    }
-
-    // Handle other errors
-    toast.error(error.message || 'Terjadi kesalahan saat menganalisis gambar');
-  };
-
   const handleUpload = async () => {
     if (!selectedImage || !user) {
       toast.error('Pilih gambar terlebih dahulu');
