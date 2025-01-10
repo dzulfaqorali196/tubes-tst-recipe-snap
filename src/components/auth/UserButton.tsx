@@ -72,7 +72,7 @@ export default function UserButton() {
   ];
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative inline-block text-left" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -82,21 +82,21 @@ export default function UserButton() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-100 sm:origin-top-right sm:right-0 right-0 left-0 mx-4 sm:mx-0">
-          <div className="px-4 py-2 border-b border-gray-100">
+        <div className="absolute right-0 mt-3 w-60 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 py-2 z-50">
+          <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-medium text-gray-900">Akun</p>
             <p className="text-sm text-gray-500 truncate">{user.email}</p>
           </div>
           
-          <div className="py-1">
+          <div className="py-2">
             {menuItems.map((item, index) => (
-              <div key={index} className="px-2 last:pb-2">
+              <div key={index} className="px-3">
                 {item.href ? (
                   <Link 
                     href={item.href} 
                     target={item.external ? "_blank" : undefined}
                     rel={item.external ? "noopener noreferrer" : undefined}
-                    className="flex items-center gap-3 p-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
                     onClick={() => setIsOpen(false)}
                   >
                     {item.icon}
@@ -108,7 +108,7 @@ export default function UserButton() {
                       item.onClick?.();
                       setIsOpen(false);
                     }}
-                    className="flex w-full items-center gap-3 p-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
                   >
                     {item.icon}
                     {item.label}
