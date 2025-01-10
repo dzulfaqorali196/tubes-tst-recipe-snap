@@ -31,26 +31,66 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
   const [labels, setLabels] = useState<string[]>([]);
   const supabase = createClient();
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log('File selected:', file.name);
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setShowResults(false);
-      clearAnalysis();
+      try {
+        console.log('File selected:', file.name);
+        // Validasi tipe file
+        if (!file.type.startsWith('image/')) {
+          toast.error('Mohon pilih file gambar yang valid');
+          return;
+        }
+        
+        // Buat URL preview
+        const objectUrl = URL.createObjectURL(file);
+        console.log('Preview URL created:', objectUrl);
+        
+        // Reset state sebelumnya
+        clearAnalysis();
+        
+        // Update state
+        setSelectedImage(file);
+        setPreviewUrl(objectUrl);
+        setShowResults(false);
+        
+        console.log('Image state updated');
+      } catch (error) {
+        console.error('Error handling image selection:', error);
+        toast.error('Gagal memuat gambar');
+      }
     }
   };
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
     if (file) {
-      console.log('File dropped:', file.name);
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setShowResults(false);
-      clearAnalysis();
+      try {
+        console.log('File dropped:', file.name);
+        // Validasi tipe file
+        if (!file.type.startsWith('image/')) {
+          toast.error('Mohon pilih file gambar yang valid');
+          return;
+        }
+        
+        // Buat URL preview
+        const objectUrl = URL.createObjectURL(file);
+        console.log('Preview URL created:', objectUrl);
+        
+        // Reset state sebelumnya
+        clearAnalysis();
+        
+        // Update state
+        setSelectedImage(file);
+        setPreviewUrl(objectUrl);
+        setShowResults(false);
+        
+        console.log('Image state updated');
+      } catch (error) {
+        console.error('Error handling dropped image:', error);
+        toast.error('Gagal memuat gambar');
+      }
     }
   };
 
@@ -60,6 +100,10 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
 
   const handleRemoveImage = () => {
     console.log('Removing image');
+    // Hapus URL preview untuk mencegah memory leak
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     clearAnalysis();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -213,7 +257,11 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
               <img
                 src={previewUrl}
                 alt="Preview"
-                className="max-h-64 mx-auto rounded-lg"
+                className="max-h-64 mx-auto rounded-lg object-contain"
+                onError={() => {
+                  console.error('Error loading image preview');
+                  toast.error('Gagal menampilkan preview gambar');
+                }}
               />
               <button
                 onClick={handleRemoveImage}
