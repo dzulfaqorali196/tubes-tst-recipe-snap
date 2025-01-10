@@ -15,12 +15,14 @@
     "@google-cloud/vision": "^4.3.2",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@radix-ui/react-tabs": "^1.1.2",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.12",
     "@types/uuid": "^10.0.0",
     "axios": "^1.7.9",
     "cloudinary": "^2.5.1",
+    "clsx": "^2.1.1",
     "lucide-react": "^0.469.0",
     "next": "15.1.4",
     "next-auth": "^4.24.11",
@@ -30,6 +32,7 @@
     "react-hot-toast": "^2.5.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.18.2",
+    "tailwind-merge": "^2.6.0",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
