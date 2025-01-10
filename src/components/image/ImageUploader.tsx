@@ -152,8 +152,18 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
 
       // Generate recipes
       console.log('Generating recipes...');
-      const recipes = await analyzeAndGenerateRecipes(detectedLabels);
-      console.log('Generated recipes:', recipes);
+      let recipes;
+      try {
+        recipes = await analyzeAndGenerateRecipes(detectedLabels);
+        console.log('Generated recipes:', recipes);
+      } catch (recipeError) {
+        console.error('Recipe generation error:', recipeError);
+        throw new Error('Gagal menghasilkan resep dari bahan yang terdeteksi');
+      }
+
+      if (!recipes || recipes.length === 0) {
+        throw new Error('Tidak ada resep yang ditemukan untuk bahan-bahan ini');
+      }
 
       // Save analysis results to context
       const timestamp = new Date().toISOString();
@@ -226,6 +236,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       onAnalysisComplete?.();
     } catch (error) {
       console.error('Upload error:', error);
+      setShowResults(false);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {

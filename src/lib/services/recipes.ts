@@ -4,11 +4,15 @@ import axios from 'axios';
 
 export async function generateRecipes(ingredients: string[]) {
   try {
-    const { data } = await axios.post('/api/recipes/generate', { ingredients });
-    return data.recipes;
+    console.log('Sending request to generate recipes with ingredients:', ingredients);
+    const { data } = await axios.post('/api/recipes/generate', { 
+      ingredients: ingredients 
+    });
+    console.log('Recipe API response:', data);
+    return data.recipes || [];
   } catch (error) {
     console.error('Recipe Generation Error:', error);
-    throw error;
+    throw new Error('Gagal menghasilkan resep. Silakan coba lagi.');
   }
 }
 
@@ -16,13 +20,13 @@ export async function analyzeAndGenerateRecipes(labels: string[]) {
   try {
     // Filter out non-food labels and prepare ingredients
     const foodLabels = labels.filter(label => 
-      ['food', 'dish', 'cuisine', 'meal', 'ingredient'].some(term => 
-        label.toLowerCase().includes(term)
-      )
+      !['food', 'ingredient', 'natural foods', 'local food', 'whole food', 'superfood', 'vegetarian food'].includes(label.toLowerCase())
     );
 
+    console.log('Filtered food labels:', foodLabels);
+
     if (foodLabels.length === 0) {
-      throw new Error('No food items detected in the image');
+      throw new Error('Tidak dapat mendeteksi bahan makanan spesifik dalam gambar');
     }
 
     // Generate recipes based on detected food items
