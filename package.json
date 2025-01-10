@@ -18,6 +18,7 @@
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.12",
+    "@types/uuid": "^10.0.0",
     "axios": "^1.7.9",
     "cloudinary": "^2.5.1",
     "lucide-react": "^0.469.0",
@@ -28,7 +29,8 @@
     "react-dom": "18.2.0",
     "react-hot-toast": "^2.5.1",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-react": "^5.18.2"
+    "swagger-ui-react": "^5.18.2",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

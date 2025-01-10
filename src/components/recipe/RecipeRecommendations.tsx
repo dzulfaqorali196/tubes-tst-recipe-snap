@@ -7,10 +7,11 @@ import { Recipe } from '@/types';
 import { addToHistory } from '@/lib/services/history';
 import { statsEventEmitter } from '@/lib/services/stats';
 import { saveShareHistory } from '@/lib/services/share';
-import { Loader2, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContexts';
 import { useImage } from '@/contexts/ImageContext';
 import toast from 'react-hot-toast';
+import { v4 as uuidv4 } from 'uuid';
 
 interface RecipeRecommendationsProps {
   ingredients: { name: string; confidence: number }[];
@@ -67,11 +68,17 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
 
         const generatedRecipes = await generateRecipes(relevantIngredients);
         if (generatedRecipes.length > 0) {
-          setRecipes(generatedRecipes);
-          await addToHistory(generatedRecipes[0], ingredients, user.id);
+          // Tambahkan ID ke setiap resep
+          const recipesWithIds = generatedRecipes.map(recipe => ({
+            ...recipe,
+            id: uuidv4()
+          }));
+          
+          setRecipes(recipesWithIds);
+          await addToHistory(recipesWithIds[0], ingredients, user.id);
           setAnalysisResults({
             labels: relevantIngredients,
-            recipes: generatedRecipes,
+            recipes: recipesWithIds,
             timestamp: new Date().toISOString()
           });
         } else {
@@ -119,9 +126,9 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
         Rekomendasi Resep
       </h2>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {recipes.map((recipe, index) => (
+        {recipes.map((recipe) => (
           <div
-            key={index}
+            key={recipe.id}
             className="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow"
           >
             {recipe.image && (
