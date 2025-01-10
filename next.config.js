@@ -4,6 +4,20 @@ const nextConfig = {
   images: {
     domains: ['mshcrvetdqodotbllogr.supabase.co'],
   },
+  // Konfigurasi untuk production di Railway
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: 'https://tubes-tst-recipe-snap-production.up.railway.app/dashboard',
+        permanent: true,
+      },
+    ];
+  },
+  // Konfigurasi environment
+  env: {
+    NEXT_PUBLIC_SITE_URL: 'https://tubes-tst-recipe-snap-production.up.railway.app',
+  },
 };
 
 module.exports = nextConfig; 
