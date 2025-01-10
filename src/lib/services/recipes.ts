@@ -3,15 +3,21 @@
 import axios from 'axios';
 import { Recipe } from '@/types';
 
+// Ambil konfigurasi dari environment variables
 const RECIPE_API_URL = process.env.NEXT_PUBLIC_RECIPE_API_URL;
 const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY;
+
+if (!RECIPE_API_URL || !RECIPE_API_KEY) {
+  console.error('Recipe API configuration is missing');
+}
 
 const axiosInstance = axios.create({
   baseURL: RECIPE_API_URL,
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
-    'X-API-Key': RECIPE_API_KEY,
+    'Accept': 'application/json',
+    'X-API-Key': RECIPE_API_KEY
   }
 });
 
@@ -26,14 +32,14 @@ export async function generateRecipes(ingredients: string[]): Promise<Recipe[]> 
   
   while (attempt < MAX_RETRIES) {
     try {
-      console.log(`Attempt ${attempt + 1}/${MAX_RETRIES} - Generating recipes for:`, ingredients);
-      
       if (!RECIPE_API_URL || !RECIPE_API_KEY) {
-        throw new Error('Recipe API configuration is missing');
+        throw new Error('Konfigurasi API tidak lengkap. Silakan hubungi administrator.');
       }
 
-      const { data } = await axiosInstance.post('', {
-        ingredients,
+      console.log(`Attempt ${attempt + 1}/${MAX_RETRIES} - Generating recipes for:`, ingredients);
+
+      const { data } = await axiosInstance.post('/generate', {
+        ingredients: ingredients,
         timestamp: new Date().toISOString()
       });
 
@@ -42,7 +48,6 @@ export async function generateRecipes(ingredients: string[]): Promise<Recipe[]> 
         throw new Error('Format response API tidak valid');
       }
 
-      console.log('Recipes generated successfully:', data.recipes.length);
       return data.recipes;
 
     } catch (error) {
@@ -50,28 +55,25 @@ export async function generateRecipes(ingredients: string[]): Promise<Recipe[]> 
       console.error(`Attempt ${attempt} failed:`, error);
 
       if (axios.isAxiosError(error)) {
-        console.error('API Error Details:', {
+        // Log error tanpa menampilkan informasi sensitif
+        console.error('API Error:', {
           status: error.response?.status,
-          data: error.response?.data,
-          headers: error.response?.headers
+          message: error.message
         });
 
-        // Jika error 401/403, tidak perlu retry
         if (error.response?.status === 401 || error.response?.status === 403) {
-          throw new Error('API key tidak valid atau tidak memiliki akses');
+          throw new Error('Terjadi masalah autentikasi. Silakan coba lagi nanti.');
         }
       }
 
-      // Jika masih ada retry tersisa, tunggu sebelum mencoba lagi
       if (attempt < MAX_RETRIES) {
         const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
-        console.log(`Waiting ${delay}ms before retry...`);
         await sleep(delay);
       } else {
-        throw new Error('Gagal generate resep setelah beberapa percobaan');
+        throw new Error('Gagal generate resep setelah beberapa percobaan. Silakan coba lagi nanti.');
       }
     }
   }
 
-  throw new Error('Unexpected error in recipe generation');
+  throw new Error('Terjadi kesalahan yang tidak terduga');
 } 
