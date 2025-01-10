@@ -25,6 +25,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
     setShowResults
   } = useImage();
   const [isUploading, setIsUploading] = useState(false);
+  const [labels, setLabels] = useState<string[]>([]);
   const supabase = createClient();
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +55,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
     setSelectedImage(null);
     setPreviewUrl(null);
     setShowResults(false);
+    setLabels([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -105,6 +107,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       }
 
       const { ingredients } = data.data;
+      setLabels(ingredients.map((ing: any) => ing.name));
 
       // Upload image to storage after successful analysis
       console.log('Uploading image to Supabase storage...');
@@ -216,7 +219,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
         )}
       </div>
 
-      {showResults && <AnalysisResults />}
+      {showResults && <AnalysisResults labels={labels} />}
     </div>
   );
 }
