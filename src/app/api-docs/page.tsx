@@ -8,6 +8,8 @@ const ApiDocsPage = () => {
   const [selectedEndpoint, setSelectedEndpoint] = useState('/api/v1/analyze');
   const [selectedMethod, setSelectedMethod] = useState('POST');
   const [requestBody, setRequestBody] = useState('');
+  const [responseData, setResponseData] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [domain, setDomain] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -28,9 +30,34 @@ const ApiDocsPage = () => {
       alert('Mohon masukkan domain aplikasi Anda');
       return;
     }
-    // Di sini Anda bisa menambahkan logika untuk generate API key
     const generatedKey = `rs_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
     setApiKey(generatedKey);
+  };
+
+  const handleSendRequest = async () => {
+    setIsLoading(true);
+    try {
+      let url = `${process.env.NEXT_PUBLIC_SITE_URL}${selectedEndpoint}`;
+      
+      if (selectedMethod === 'GET' && requestBody) {
+        url += `?${requestBody}`;
+      }
+
+      const response = await fetch(url, {
+        method: selectedMethod,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: selectedMethod === 'POST' ? requestBody : undefined,
+      });
+
+      const data = await response.json();
+      setResponseData(JSON.stringify(data, null, 2));
+    } catch (error) {
+      setResponseData(JSON.stringify({ error: 'Failed to fetch response' }, null, 2));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getRequestBodyExample = (endpoint: string) => {
@@ -43,41 +70,9 @@ const ApiDocsPage = () => {
   }
 }`;
       case '/api/v1/stats':
-        return `// Query Parameters
-user_id=123e4567-e89b-12d3-a456-426614174000
-
-// Example Response
-{
-  "success": true,
-  "data": {
-    "totalScans": 10,
-    "totalShares": 5,
-    "lastUpdated": "2024-01-20T12:00:00Z"
-  }
-}`;
+        return 'user_id=123e4567-e89b-12d3-a456-426614174000';
       case '/api/v1/history':
-        return `// Query Parameters
-user_id=123e4567-e89b-12d3-a456-426614174000
-limit=10
-offset=0
-
-// Example Response
-{
-  "success": true,
-  "data": {
-    "history": [
-      {
-        "id": "abc123",
-        "image_url": "https://example.com/image.jpg",
-        "ingredients": ["bawang", "tomat", "cabai"],
-        "created_at": "2024-01-20T12:00:00Z"
-      }
-    ],
-    "total": 1,
-    "limit": 10,
-    "offset": 0
-  }
-}`;
+        return 'user_id=123e4567-e89b-12d3-a456-426614174000&limit=10&offset=0';
       default:
         return '';
     }
@@ -85,187 +80,215 @@ offset=0
 
   useEffect(() => {
     setRequestBody(getRequestBodyExample(selectedEndpoint));
+    setResponseData('');
   }, [selectedEndpoint]);
 
   return (
-    <div className="container mx-auto py-8 px-4 text-black">
-      <h1 className="text-4xl font-bold mb-8">Recipe Snap API Documentation</h1>
-      
-      <div className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">About Recipe Snap API</h2>
-        <p className="text-gray-700 mb-6">
-          Recipe Snap API memungkinkan Anda mengintegrasikan fitur pengenalan resep dan analisis gambar makanan ke dalam aplikasi Anda.
-          Kami menyediakan endpoint-endpoint yang dapat digunakan untuk menganalisis gambar makanan, mendapatkan resep, dan mengelola riwayat pengguna.
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-8 px-4 text-black">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-8 mb-12">
+          <h1 className="text-4xl font-bold mb-4">Recipe Snap API Documentation</h1>
+          <p className="text-lg opacity-90">
+            Integrasikan fitur pengenalan resep dan analisis gambar makanan ke dalam aplikasi Anda
+          </p>
+        </div>
+        
+        {/* About Section */}
+        <div className="bg-white rounded-lg shadow-sm p-8 mb-12">
+          <h2 className="text-2xl font-semibold mb-4">About Recipe Snap API</h2>
+          <p className="text-gray-700">
+            Recipe Snap API memungkinkan Anda mengintegrasikan fitur pengenalan resep dan analisis gambar makanan ke dalam aplikasi Anda.
+            Kami menyediakan endpoint-endpoint yang dapat digunakan untuk menganalisis gambar makanan, mendapatkan resep, dan mengelola riwayat pengguna.
+          </p>
+        </div>
 
-      <div className="mb-12">
-        <h2 className="text-2xl font-semibold mb-4">Get API Key</h2>
-        <div className="bg-white p-6 rounded-lg border">
-          {isAuthenticated ? (
-            <>
-              <h3 className="text-xl mb-4">Generate API Key</h3>
-              <p className="text-gray-600 mb-4">
-                Masukkan domain aplikasi Anda untuk mendapatkan API key.
-              </p>
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder="https://yourdomain.com"
-                  className="w-full p-2 border rounded-md mb-4"
-                />
+        {/* Get API Key Section */}
+        <div className="bg-white rounded-lg shadow-sm p-8 mb-12">
+          <h2 className="text-2xl font-semibold mb-4">Get API Key</h2>
+          <div className="bg-gray-50 p-6 rounded-lg border">
+            {isAuthenticated ? (
+              <>
+                <h3 className="text-xl mb-4">Generate API Key</h3>
+                <p className="text-gray-600 mb-4">
+                  Masukkan domain aplikasi Anda untuk mendapatkan API key.
+                </p>
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    placeholder="https://yourdomain.com"
+                    className="w-full p-2 border rounded-md mb-4"
+                  />
+                  <button 
+                    onClick={generateApiKey}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Generate API Key
+                  </button>
+                </div>
+                {apiKey && (
+                  <div className="mt-4 p-4 bg-white rounded-md border">
+                    <p className="font-semibold mb-2">Your API Key:</p>
+                    <code className="block p-2 bg-gray-50 rounded">{apiKey}</code>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Simpan API key ini dengan aman. API key tidak akan ditampilkan lagi.
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl mb-4">Login untuk Mendapatkan API Key</h3>
+                <p className="text-gray-600 mb-6">
+                  Untuk mendapatkan API key, Anda perlu login terlebih dahulu.
+                </p>
                 <button 
-                  onClick={generateApiKey}
+                  onClick={() => router.push('/auth')}
                   className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Generate API Key
+                  Login dengan Google
                 </button>
-              </div>
-              {apiKey && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-md">
-                  <p className="font-semibold mb-2">Your API Key:</p>
-                  <code className="block p-2 bg-gray-100 rounded">{apiKey}</code>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Simpan API key ini dengan aman. API key tidak akan ditampilkan lagi.
-                  </p>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <h3 className="text-xl mb-4">Login untuk Mendapatkan API Key</h3>
-              <p className="text-gray-600 mb-6">
-                Untuk mendapatkan API key, Anda perlu login terlebih dahulu.
-              </p>
-              <button 
-                onClick={() => router.push('/auth')}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Login dengan Google
-              </button>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6">API Endpoints</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-blue-600 text-white">
-                <th className="border p-4 text-left">Endpoint</th>
-                <th className="border p-4 text-left">HTTP Method</th>
-                <th className="border p-4 text-left">Description</th>
-                <th className="border p-4 text-left">Required Headers</th>
-                <th className="border p-4 text-left">Request Body/Params</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border hover:bg-gray-50">
-                <td className="border p-4 font-mono">/api/v1/analyze</td>
-                <td className="border p-4">POST</td>
-                <td className="border p-4">Menganalisis gambar makanan untuk mengidentifikasi bahan-bahan</td>
-                <td className="border p-4 font-mono">x-api-key</td>
-                <td className="border p-4">
-                  <pre className="whitespace-pre-wrap text-sm">
-                    {`{
+        {/* API Endpoints Section */}
+        <div className="bg-white rounded-lg shadow-sm p-8 mb-12">
+          <h2 className="text-2xl font-semibold mb-6">API Endpoints</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-blue-600 text-white">
+                  <th className="border p-4 text-left">Endpoint</th>
+                  <th className="border p-4 text-left">HTTP Method</th>
+                  <th className="border p-4 text-left">Description</th>
+                  <th className="border p-4 text-left">Required Headers</th>
+                  <th className="border p-4 text-left">Request Body/Params</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border hover:bg-gray-50">
+                  <td className="border p-4 font-mono">/api/v1/analyze</td>
+                  <td className="border p-4">POST</td>
+                  <td className="border p-4">Menganalisis gambar makanan untuk mengidentifikasi bahan-bahan</td>
+                  <td className="border p-4 font-mono">x-api-key</td>
+                  <td className="border p-4">
+                    <pre className="whitespace-pre-wrap text-sm">
+                      {`{
   "image": "File gambar"
 }`}
-                  </pre>
-                </td>
-              </tr>
-              <tr className="border hover:bg-gray-50">
-                <td className="border p-4 font-mono">/api/v1/stats</td>
-                <td className="border p-4">GET</td>
-                <td className="border p-4">Mendapatkan statistik penggunaan pengguna</td>
-                <td className="border p-4 font-mono">x-api-key</td>
-                <td className="border p-4">
-                  <pre className="whitespace-pre-wrap text-sm">
-                    Query params:
-                    - user_id (required)
-                  </pre>
-                </td>
-              </tr>
-              <tr className="border hover:bg-gray-50">
-                <td className="border p-4 font-mono">/api/v1/history</td>
-                <td className="border p-4">GET</td>
-                <td className="border p-4">Mendapatkan riwayat analisis resep pengguna</td>
-                <td className="border p-4 font-mono">x-api-key</td>
-                <td className="border p-4">
-                  <pre className="whitespace-pre-wrap text-sm">
-                    Query params:
-                    - user_id (required)
-                    - limit (optional, default: 10)
-                    - offset (optional, default: 0)
-                  </pre>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                    </pre>
+                  </td>
+                </tr>
+                <tr className="border hover:bg-gray-50">
+                  <td className="border p-4 font-mono">/api/v1/stats</td>
+                  <td className="border p-4">GET</td>
+                  <td className="border p-4">Mendapatkan statistik penggunaan pengguna</td>
+                  <td className="border p-4 font-mono">x-api-key</td>
+                  <td className="border p-4">
+                    <pre className="whitespace-pre-wrap text-sm">
+                      Query params:
+                      - user_id (required)
+                    </pre>
+                  </td>
+                </tr>
+                <tr className="border hover:bg-gray-50">
+                  <td className="border p-4 font-mono">/api/v1/history</td>
+                  <td className="border p-4">GET</td>
+                  <td className="border p-4">Mendapatkan riwayat analisis resep pengguna</td>
+                  <td className="border p-4 font-mono">x-api-key</td>
+                  <td className="border p-4">
+                    <pre className="whitespace-pre-wrap text-sm">
+                      Query params:
+                      - user_id (required)
+                      - limit (optional, default: 10)
+                      - offset (optional, default: 0)
+                    </pre>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <div className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6">Try the API</h2>
-        <p className="mb-4">Pilih endpoint dan isi data yang diperlukan untuk menguji API secara langsung.</p>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Endpoint:</label>
-            <select 
-              value={selectedEndpoint}
-              onChange={(e) => setSelectedEndpoint(e.target.value)}
-              className="w-full p-2 border rounded-md bg-white"
-              aria-label="Select API endpoint"
-              title="Select API endpoint"
-            >
-              <option value="/api/v1/analyze">/api/v1/analyze</option>
-              <option value="/api/v1/stats">/api/v1/stats</option>
-              <option value="/api/v1/history">/api/v1/history</option>
-            </select>
+        {/* Try API Section */}
+        <div className="bg-white rounded-lg shadow-sm p-8 mb-12">
+          <h2 className="text-2xl font-semibold mb-6">Try the API</h2>
+          <p className="mb-6 text-gray-700">Pilih endpoint dan isi data yang diperlukan untuk menguji API secara langsung.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Request Panel */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold mb-4">Request</h3>
+              <div>
+                <label className="block text-sm font-medium mb-2">Endpoint:</label>
+                <select 
+                  value={selectedEndpoint}
+                  onChange={(e) => setSelectedEndpoint(e.target.value)}
+                  className="w-full p-2 border rounded-md bg-white"
+                  aria-label="Select API endpoint"
+                >
+                  <option value="/api/v1/analyze">/api/v1/analyze</option>
+                  <option value="/api/v1/stats">/api/v1/stats</option>
+                  <option value="/api/v1/history">/api/v1/history</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">HTTP Method:</label>
+                <select 
+                  value={selectedMethod}
+                  onChange={(e) => setSelectedMethod(e.target.value)}
+                  className="w-full p-2 border rounded-md bg-white"
+                  aria-label="Select HTTP method"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {selectedMethod === 'GET' ? 'Query Parameters:' : 'Request Body (JSON):'}
+                </label>
+                <textarea
+                  value={requestBody}
+                  onChange={(e) => setRequestBody(e.target.value)}
+                  className="w-full h-48 p-2 border rounded-md font-mono bg-white"
+                  placeholder={selectedMethod === 'GET' ? 'Enter query parameters' : 'Enter JSON request body'}
+                />
+              </div>
+
+              <button 
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                onClick={handleSendRequest}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Sending...' : 'Send Request'}
+              </button>
+            </div>
+
+            {/* Response Panel */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Response</h3>
+              <div className="border rounded-md bg-gray-50 p-4 h-[400px] overflow-auto">
+                <pre className="whitespace-pre-wrap font-mono text-sm">
+                  {responseData || 'Response will appear here...'}
+                </pre>
+              </div>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">HTTP Method:</label>
-            <select 
-              value={selectedMethod}
-              onChange={(e) => setSelectedMethod(e.target.value)}
-              className="w-full p-2 border rounded-md bg-white"
-              aria-label="Select HTTP method"
-              title="Select HTTP method"
-            >
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Request Body/Params:</label>
-            <textarea
-              value={requestBody}
-              onChange={(e) => setRequestBody(e.target.value)}
-              className="w-full h-64 p-2 border rounded-md font-mono bg-white"
-              aria-label="Request body or parameters"
-              placeholder="Enter request body (for POST) or query parameters (for GET)"
-            />
-          </div>
-
-          <button 
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-            onClick={() => alert('API request will be implemented here')}
-          >
-            Send Request
-          </button>
         </div>
-      </div>
 
-      <div className="border-t pt-8">
-        <p className="text-center text-gray-600">
-          © 2024 Recipe Snap. All Rights Reserved.
-        </p>
+        {/* Footer */}
+        <div className="border-t pt-8">
+          <p className="text-center text-gray-600">
+            © 2024 Recipe Snap. All Rights Reserved.
+          </p>
+        </div>
       </div>
     </div>
   );
