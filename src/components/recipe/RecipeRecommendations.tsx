@@ -22,7 +22,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
   const [error, setError] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const { user } = useAuth();
-  const { showResults, hasGenerated, setHasGenerated } = useImage();
+  const { showResults, analysisResults, setAnalysisResults } = useImage();
 
   // Fungsi untuk berbagi resep
   const handleShare = async (recipe: Recipe) => {
@@ -47,7 +47,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
 
   useEffect(() => {
     const fetchRecipes = async () => {
-      if (!ingredients.length || !user || hasGenerated || !showResults) return;
+      if (!ingredients.length || !user || analysisResults || !showResults) return;
 
       setIsLoading(true);
       try {
@@ -69,7 +69,11 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
         if (generatedRecipes.length > 0) {
           setRecipes(generatedRecipes);
           await addToHistory(generatedRecipes[0], ingredients, user.id);
-          setHasGenerated(true);
+          setAnalysisResults({
+            labels: relevantIngredients,
+            recipes: generatedRecipes,
+            timestamp: new Date().toISOString()
+          });
         } else {
           setError('Tidak ada rekomendasi resep untuk bahan-bahan ini');
         }
@@ -82,11 +86,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
     };
 
     fetchRecipes();
-  }, [ingredients, user, hasGenerated, showResults, setHasGenerated]);
-
-  useEffect(() => {
-    setHasGenerated(false);
-  }, [ingredients, setHasGenerated]);
+  }, [ingredients, user, analysisResults, showResults, setAnalysisResults]);
 
   if (isLoading) {
     return (
