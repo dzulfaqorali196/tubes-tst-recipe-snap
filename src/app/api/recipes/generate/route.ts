@@ -29,16 +29,29 @@ export async function POST(request: Request) {
 
     console.log('Recipe API raw response:', response.data);
 
-    // Format response data
+    // Pastikan response.data adalah array
     const recipes = Array.isArray(response.data) ? response.data : [response.data];
     
-    // Pastikan setiap resep memiliki format yang benar
-    const formattedRecipes = recipes.map(recipe => ({
-      name: recipe.name || 'Untitled Recipe',
-      description: recipe.description || '',
-      ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
-      instructions: Array.isArray(recipe.instructions) ? recipe.instructions : []
-    }));
+    // Format resep sesuai dengan struktur yang diharapkan
+    const formattedRecipes = recipes.map(recipe => {
+      // Jika recipe adalah string, buat objek resep baru
+      if (typeof recipe === 'string') {
+        return {
+          name: recipe,
+          description: '',
+          ingredients: ingredients,
+          instructions: []
+        };
+      }
+
+      // Jika recipe adalah objek, gunakan properti yang ada
+      return {
+        name: recipe.name || recipe.title || recipe.recipe_name || 'Untitled Recipe',
+        description: recipe.description || recipe.desc || '',
+        ingredients: recipe.ingredients || ingredients || [],
+        instructions: recipe.instructions || recipe.steps || []
+      };
+    });
 
     console.log('Formatted recipes:', formattedRecipes);
 

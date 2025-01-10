@@ -28,28 +28,169 @@ Recipe Snap adalah aplikasi web yang memungkinkan pengguna untuk mendapatkan res
 - **Deployment**: Railway
 - **Container**: Docker
 
-## 🔑 API yang Digunakan
+## 🔑 Dokumentasi API
 
-### 1. Azure Computer Vision API
-- **Endpoint**: `https://recipe-snap-vision.cognitiveservices.azure.com/`
-- **Fungsi**: Mendeteksi dan menganalisis gambar makanan
-- **Fitur**: Object detection, Image analysis
+### Base URL
+```
+https://tubes-tst-recipe-snap-production.up.railway.app/api
+```
 
-### 2. Recipe API
-- **Endpoint**: `https://smart-health-tst.up.railway.app/api/recipes`
-- **Fungsi**: Menyediakan data resep makanan
-- **Fitur**: 
-  - Pencarian resep
-  - Detail resep
-  - Rekomendasi resep
+### Autentikasi
+Semua endpoint memerlukan API key yang valid dalam header request:
+```
+X-API-Key: YOUR_API_KEY
+```
 
-### 3. Supabase API
-- **URL**: `https://mshcrvetdqodotbllogr.supabase.co`
-- **Fungsi**: Database dan autentikasi
-- **Fitur**:
-  - User management
-  - Data storage
-  - Real-time updates
+### Endpoints
+
+#### 1. Generate Resep
+```http
+POST /recipes/generate
+```
+Menghasilkan resep berdasarkan daftar bahan.
+
+**Request Body:**
+```json
+{
+  "ingredients": ["bawang", "tomat", "cabai"]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "recipes": [
+    {
+      "name": "Nasi Goreng Spesial",
+      "description": "Nasi goreng dengan bumbu spesial",
+      "ingredients": ["bawang", "tomat", "cabai"],
+      "instructions": [
+        "1. Tumis bumbu halus hingga harum",
+        "2. Masukkan nasi dan aduk rata",
+        "3. Tambahkan kecap dan bumbu lainnya"
+      ]
+    }
+  ]
+}
+```
+
+#### 2. Analisis Gambar
+```http
+POST /recipes/analyze
+```
+Menganalisis gambar makanan dan mendeteksi bahan-bahan.
+
+**Request Body:**
+```
+Form Data:
+- image: File (gambar makanan)
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "ingredients": [
+      {
+        "name": "tomat",
+        "confidence": 0.95
+      }
+    ],
+    "image_url": "https://example.com/image.jpg",
+    "timestamp": "2024-01-20T12:00:00Z"
+  }
+}
+```
+
+#### 3. Daftar Resep
+```http
+GET /recipes
+```
+Mendapatkan daftar resep dengan pagination.
+
+**Query Parameters:**
+- page (optional): Nomor halaman (default: 1)
+- limit (optional): Jumlah item per halaman (default: 10)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "recipes": [
+      {
+        "id": 1,
+        "name": "Nasi Goreng",
+        "ingredients": ["nasi", "bawang", "telur"],
+        "thumbnail": "https://example.com/nasi-goreng.jpg"
+      }
+    ],
+    "pagination": {
+      "total": 100,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+#### 4. Riwayat Analisis
+```http
+GET /recipes/history
+```
+Mendapatkan riwayat analisis gambar pengguna.
+
+**Query Parameters:**
+- page (optional): Nomor halaman (default: 1)
+- limit (optional): Jumlah item per halaman (default: 10)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "history": [
+      {
+        "id": 1,
+        "timestamp": "2024-01-20T12:00:00Z",
+        "recipe_name": "Nasi Goreng Spesial",
+        "ingredients": ["bawang", "tomat", "cabai"],
+        "image_url": "https://example.com/nasi-goreng.jpg"
+      }
+    ],
+    "pagination": {
+      "total": 100,
+      "page": 1,
+      "limit": 10
+    }
+  }
+}
+```
+
+### Error Responses
+
+#### 400 Bad Request
+```json
+{
+  "error": "Invalid ingredients data"
+}
+```
+
+#### 401 Unauthorized
+```json
+{
+  "error": "API key tidak valid atau tidak ditemukan"
+}
+```
+
+#### 500 Internal Server Error
+```json
+{
+  "error": "Gagal menghasilkan resep. Silakan coba lagi."
+}
+```
 
 ## 🚀 Cara Menjalankan Aplikasi
 

@@ -89,6 +89,24 @@ const ApiDocsPage = () => {
       label: '/api/recipes',
       method: 'GET',
       example: 'page=1&limit=10'
+    },
+    {
+      value: '/api/recipes/analyze',
+      label: '/api/recipes/analyze',
+      method: 'POST',
+      example: `{
+  "ingredients": ["bawang", "tomat", "cabai"],
+  "preferences": {
+    "cuisine": "Indonesian",
+    "dietary": "Regular"
+  }
+}`
+    },
+    {
+      value: '/api/recipes/history',
+      label: '/api/recipes/history',
+      method: 'GET',
+      example: 'page=1&limit=10'
     }
   ];
 
