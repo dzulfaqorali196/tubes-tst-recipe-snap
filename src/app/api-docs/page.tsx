@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const ApiDocsPage = () => {
-  const [selectedEndpoint, setSelectedEndpoint] = useState('/api/v1/analyze');
+  const [selectedEndpoint, setSelectedEndpoint] = useState('/api/recipes/generate');
   const [selectedMethod, setSelectedMethod] = useState('POST');
   const [requestBody, setRequestBody] = useState('');
   const [responseData, setResponseData] = useState('');
@@ -37,7 +37,7 @@ const ApiDocsPage = () => {
   const handleSendRequest = async () => {
     setIsLoading(true);
     try {
-      let url = `${process.env.NEXT_PUBLIC_SITE_URL}${selectedEndpoint}`;
+      let url = selectedEndpoint;
       
       if (selectedMethod === 'GET' && requestBody) {
         url += `?${requestBody}`;
@@ -62,17 +62,24 @@ const ApiDocsPage = () => {
 
   const getRequestBodyExample = (endpoint: string) => {
     switch (endpoint) {
-      case '/api/v1/analyze':
+      case '/api/recipes/generate':
         return `{
-  "image": "(File gambar makanan dalam format base64)",
-  "example": {
-    "image": "/9j/4AAQSkZJRg....(base64 string)..."
+  "image": "File gambar dalam format base64",
+  "prompt": "string (optional) - Tambahan instruksi untuk analisis"
+}`;
+      case '/api/recipes':
+        return `// Tidak memerlukan request body
+// Query parameters (optional):
+// - page: number (default: 1)
+// - limit: number (default: 10)`;
+      case '/api/recipes/analyze':
+        return `{
+  "ingredients": ["bawang", "tomat", "cabai"],
+  "preferences": {
+    "cuisine": "Indonesian",     // optional
+    "dietary": "Vegetarian"      // optional
   }
 }`;
-      case '/api/v1/stats':
-        return 'user_id=123e4567-e89b-12d3-a456-426614174000';
-      case '/api/v1/history':
-        return 'user_id=123e4567-e89b-12d3-a456-426614174000&limit=10&offset=0';
       default:
         return '';
     }
@@ -111,7 +118,7 @@ const ApiDocsPage = () => {
               <>
                 <h3 className="text-xl mb-4">Generate API Key</h3>
                 <p className="text-gray-600 mb-4">
-                  Masukkan domain aplikasi Anda untuk mendapatkan API key.
+                  Masukkan domain aplikasi Anda untuk mendapatkan API key. API key diperlukan jika Anda ingin mengintegrasikan API ke aplikasi Anda.
                 </p>
                 <div className="mb-4">
                   <input
@@ -142,7 +149,7 @@ const ApiDocsPage = () => {
               <>
                 <h3 className="text-xl mb-4">Login untuk Mendapatkan API Key</h3>
                 <p className="text-gray-600 mb-6">
-                  Untuk mendapatkan API key, Anda perlu login terlebih dahulu.
+                  Untuk mengintegrasikan API ke aplikasi Anda, Anda perlu login dan mendapatkan API key.
                 </p>
                 <button 
                   onClick={() => router.push('/auth')}
@@ -165,49 +172,54 @@ const ApiDocsPage = () => {
                   <th className="border p-4 text-left">Endpoint</th>
                   <th className="border p-4 text-left">HTTP Method</th>
                   <th className="border p-4 text-left">Description</th>
-                  <th className="border p-4 text-left">Required Headers</th>
-                  <th className="border p-4 text-left">Request Body/Params</th>
+                  <th className="border p-4 text-left">Required Request Body</th>
+                  <th className="border p-4 text-left">Guide</th>
                 </tr>
               </thead>
               <tbody>
                 <tr className="border hover:bg-gray-50">
-                  <td className="border p-4 font-mono">/api/v1/analyze</td>
+                  <td className="border p-4 font-mono">/api/recipes/generate</td>
                   <td className="border p-4">POST</td>
-                  <td className="border p-4">Menganalisis gambar makanan untuk mengidentifikasi bahan-bahan</td>
-                  <td className="border p-4 font-mono">x-api-key</td>
+                  <td className="border p-4">Generate resep dari gambar makanan</td>
                   <td className="border p-4">
                     <pre className="whitespace-pre-wrap text-sm">
                       {`{
-  "image": "File gambar"
+  "image": "File gambar",
+  "prompt": "string (optional)"
 }`}
                     </pre>
                   </td>
+                  <td className="border p-4">Upload gambar makanan untuk mendapatkan resep</td>
                 </tr>
                 <tr className="border hover:bg-gray-50">
-                  <td className="border p-4 font-mono">/api/v1/stats</td>
+                  <td className="border p-4 font-mono">/api/recipes</td>
                   <td className="border p-4">GET</td>
-                  <td className="border p-4">Mendapatkan statistik penggunaan pengguna</td>
-                  <td className="border p-4 font-mono">x-api-key</td>
+                  <td className="border p-4">Mendapatkan daftar resep</td>
                   <td className="border p-4">
                     <pre className="whitespace-pre-wrap text-sm">
-                      Query params:
-                      - user_id (required)
+                      Query params (optional):
+                      - page: number
+                      - limit: number
                     </pre>
                   </td>
+                  <td className="border p-4">Mengambil daftar resep dengan pagination</td>
                 </tr>
                 <tr className="border hover:bg-gray-50">
-                  <td className="border p-4 font-mono">/api/v1/history</td>
-                  <td className="border p-4">GET</td>
-                  <td className="border p-4">Mendapatkan riwayat analisis resep pengguna</td>
-                  <td className="border p-4 font-mono">x-api-key</td>
+                  <td className="border p-4 font-mono">/api/recipes/analyze</td>
+                  <td className="border p-4">POST</td>
+                  <td className="border p-4">Analisis bahan makanan</td>
                   <td className="border p-4">
                     <pre className="whitespace-pre-wrap text-sm">
-                      Query params:
-                      - user_id (required)
-                      - limit (optional, default: 10)
-                      - offset (optional, default: 0)
+                      {`{
+  "ingredients": string[],
+  "preferences": {
+    "cuisine": string,
+    "dietary": string
+  }
+}`}
                     </pre>
                   </td>
+                  <td className="border p-4">Analisis bahan untuk mendapatkan rekomendasi resep</td>
                 </tr>
               </tbody>
             </table>
@@ -217,7 +229,10 @@ const ApiDocsPage = () => {
         {/* Try API Section */}
         <div className="bg-white rounded-lg shadow-sm p-8 mb-12">
           <h2 className="text-2xl font-semibold mb-6">Try the API</h2>
-          <p className="mb-6 text-gray-700">Pilih endpoint dan isi data yang diperlukan untuk menguji API secara langsung.</p>
+          <p className="mb-6 text-gray-700">
+            Pilih endpoint dan isi data yang diperlukan untuk menguji API secara langsung.
+            Untuk uji coba tidak memerlukan API key.
+          </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Request Panel */}
@@ -231,9 +246,9 @@ const ApiDocsPage = () => {
                   className="w-full p-2 border rounded-md bg-white"
                   aria-label="Select API endpoint"
                 >
-                  <option value="/api/v1/analyze">/api/v1/analyze</option>
-                  <option value="/api/v1/stats">/api/v1/stats</option>
-                  <option value="/api/v1/history">/api/v1/history</option>
+                  <option value="/api/recipes/generate">/api/recipes/generate</option>
+                  <option value="/api/recipes">/api/recipes</option>
+                  <option value="/api/recipes/analyze">/api/recipes/analyze</option>
                 </select>
               </div>
 
