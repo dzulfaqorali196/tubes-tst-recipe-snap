@@ -4,9 +4,12 @@ const nextConfig = {
   images: {
     domains: ['mshcrvetdqodotbllogr.supabase.co'],
   },
-  webServer: {
-    hostname: '0.0.0.0',
-    port: parseInt(process.env.PORT || '3000', 10)
+  // Konfigurasi untuk production di Railway
+  async redirects() {
+    return [];
+  },
+  env: {
+    NEXT_PUBLIC_SITE_URL: process.env.RAILWAY_STATIC_URL || 'https://tubes-tst-recipe-snap-production.up.railway.app'
   }
 };
 
