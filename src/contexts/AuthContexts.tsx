@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -27,18 +28,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getUser = async () => {
       try {
         console.log('Checking session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('Session error:', error.message);
+        if (sessionError) {
+          console.error('Session error:', sessionError.message);
+          setError(sessionError.message);
           setUser(null);
+          router.push('/auth');
+          return;
+        }
+
+        console.log('Session status:', session ? 'Active' : 'No session');
+        if (session?.user) {
+          setUser(session.user);
         } else {
-          console.log('Session status:', session ? 'Active' : 'No session');
-          setUser(session?.user ?? null);
+          setUser(null);
+          if (window.location.pathname.startsWith('/dashboard')) {
+            router.push('/auth');
+          }
         }
       } catch (error) {
         console.error('Unexpected error during session check:', error);
+        setError(error instanceof Error ? error.message : 'An unexpected error occurred');
         setUser(null);
+        router.push('/auth');
       } finally {
         setIsLoading(false);
       }
@@ -48,14 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state changed:', _event);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user ?? null);
+        router.push('/dashboard');
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        router.push('/auth');
+      }
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   const signOut = async () => {
     try {
