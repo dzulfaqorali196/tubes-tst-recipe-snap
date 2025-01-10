@@ -5,6 +5,16 @@ import { Database } from './lib/database.types';
 
 export async function middleware(request: NextRequest) {
   try {
+    // Abaikan rute yang tidak perlu middleware
+    if (
+      request.nextUrl.pathname.startsWith('/_next') ||
+      request.nextUrl.pathname.startsWith('/api') ||
+      request.nextUrl.pathname.startsWith('/static') ||
+      request.nextUrl.pathname === '/'
+    ) {
+      return NextResponse.next();
+    }
+
     console.log('Middleware executing for path:', request.nextUrl.pathname);
     
     const res = NextResponse.next();
@@ -18,35 +28,33 @@ export async function middleware(request: NextRequest) {
 
     // Get current path
     const currentPath = request.nextUrl.pathname;
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+    const baseUrl = request.nextUrl.origin;
+
+    // Daftar rute yang memerlukan autentikasi
+    const protectedRoutes = ['/dashboard', '/profile', '/riwayat'];
+    const isProtectedRoute = protectedRoutes.some(route => currentPath.startsWith(route));
 
     // Jika user tidak terautentikasi dan mencoba mengakses halaman yang dilindungi
-    if (!session && (
-      currentPath.startsWith('/dashboard') ||
-      currentPath.startsWith('/profile')
-    )) {
+    if (!session && isProtectedRoute) {
       console.log('Unauthorized access attempt, redirecting to auth...');
-      const redirectUrl = new URL('/auth', baseUrl);
-      redirectUrl.searchParams.set('redirectTo', currentPath);
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL('/auth', baseUrl));
     }
 
     // Jika user sudah terautentikasi dan mencoba mengakses halaman auth
-    if (session && currentPath.startsWith('/auth')) {
+    if (session && currentPath === '/auth') {
       console.log('Authenticated user accessing auth page, redirecting to dashboard...');
-      const redirectTo = request.nextUrl.searchParams.get('redirectTo') || '/dashboard';
-      return NextResponse.redirect(new URL(redirectTo, baseUrl));
+      return NextResponse.redirect(new URL('/dashboard', baseUrl));
     }
 
     return res;
   } catch (error) {
     console.error('Middleware error:', error);
-    // Fallback ke homepage dengan URL lengkap
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
-    return NextResponse.redirect(new URL('/', baseUrl));
+    return NextResponse.next();
   }
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 };

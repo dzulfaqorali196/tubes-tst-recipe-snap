@@ -20,11 +20,12 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
+    let mounted = true;
+
     const getUser = async () => {
       try {
         console.log('Checking session...');
@@ -32,28 +33,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (sessionError) {
           console.error('Session error:', sessionError.message);
-          setError(sessionError.message);
-          setUser(null);
-          router.push('/auth');
           return;
         }
 
+        if (!mounted) return;
+
         console.log('Session status:', session ? 'Active' : 'No session');
-        if (session?.user) {
-          setUser(session.user);
-        } else {
-          setUser(null);
-          if (window.location.pathname.startsWith('/dashboard')) {
-            router.push('/auth');
-          }
-        }
+        setUser(session?.user ?? null);
       } catch (error) {
         console.error('Unexpected error during session check:', error);
-        setError(error instanceof Error ? error.message : 'An unexpected error occurred');
-        setUser(null);
-        router.push('/auth');
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -63,18 +55,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
-      if (event === 'SIGNED_IN') {
-        setUser(session?.user ?? null);
-        router.push('/dashboard');
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        router.push('/auth');
-      }
+      
+      if (!mounted) return;
+
+      setUser(session?.user ?? null);
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [router]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signOut = async () => {
     try {
@@ -86,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       console.log('Successfully signed out');
       setUser(null);
-      router.push('/auth');
     } catch (error) {
       console.error('Error during sign out:', error);
     } finally {
