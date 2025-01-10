@@ -7,9 +7,8 @@ const key = process.env.AZURE_COMPUTER_VISION_KEY?.trim();
 const endpoint = process.env.AZURE_COMPUTER_VISION_ENDPOINT?.trim();
 
 // Debug log
-console.log('Loading vision config...');
-console.log('Key length:', key?.length);
-console.log('Key preview:', key?.substring(0, 10) + '...');
+console.log('Vision Service Configuration:');
+console.log('Key exists:', !!key);
 console.log('Endpoint:', endpoint);
 
 // Validasi konfigurasi
@@ -37,8 +36,10 @@ interface AnalysisResult {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function analyzeImage(base64Image: string): Promise<AnalysisResult[]> {
+export async function analyzeImage(base64Image: string): Promise<string[]> {
   try {
+    console.log('Starting image analysis...');
+    
     // Validasi input
     if (!base64Image) {
       throw new Error('No image data provided');
@@ -48,10 +49,7 @@ export async function analyzeImage(base64Image: string): Promise<AnalysisResult[
     const imageData = base64Image.replace(/^data:image\/\w+;base64,/, '');
     const imageBuffer = Buffer.from(imageData, 'base64');
     
-    // Debug log untuk memastikan request yang dikirim
-    console.log('Preparing request to Azure Computer Vision...');
-    console.log('Using endpoint:', sanitizedEndpoint);
-    console.log('Image buffer size:', imageBuffer.length, 'bytes');
+    console.log('Image buffer prepared, size:', imageBuffer.length, 'bytes');
     
     // Implementasi retry logic
     let attempts = 0;
@@ -60,62 +58,78 @@ export async function analyzeImage(base64Image: string): Promise<AnalysisResult[
 
     while (attempts < maxAttempts) {
       try {
-        console.log(`Attempt ${attempts + 1} of ${maxAttempts}...`);
+        console.log(`Analysis attempt ${attempts + 1} of ${maxAttempts}...`);
         
-        // Analisis gambar dengan method yang benar
+        // Analisis gambar
         const result = await computerVisionClient.analyzeImageInStream(
           imageBuffer,
           { 
-            visualFeatures: ['Tags']
+            visualFeatures: ['Tags', 'Objects', 'Description'],
+            language: 'id' // Gunakan Bahasa Indonesia
           }
         );
 
-        console.log('Raw API response:', JSON.stringify(result, null, 2));
+        console.log('Raw API response received');
 
-        // Jika berhasil, proses hasilnya
-        if (!result?.tags) {
+        if (!result) {
           throw new Error('No analysis results received from Azure');
         }
 
-        // Proses tags dengan tipe data yang benar
-        const tags = result.tags
-          .filter((tag): tag is { name: string; confidence: number } => 
-            typeof tag.name === 'string' && 
-            typeof tag.confidence === 'number' && 
-            tag.confidence > 0.5
-          )
-          .map(tag => ({
-            name: tag.name,
-            confidence: tag.confidence
-          }));
+        // Kumpulkan semua tag yang relevan
+        const allTags = new Set<string>();
+
+        // Tambahkan dari tags
+        if (result.tags) {
+          result.tags
+            .filter(tag => tag && typeof tag.confidence === 'number' && tag.confidence > 0.5)
+            .forEach(tag => tag.name && allTags.add(tag.name.toLowerCase()));
+        }
+
+        // Tambahkan dari objects
+        if (result.objects) {
+          result.objects
+            .filter(obj => obj && typeof obj.confidence === 'number' && obj.confidence > 0.5)
+            .forEach(obj => obj.object && allTags.add(obj.object.toLowerCase()));
+        }
+
+        // Tambahkan dari description
+        if (result.description?.captions) {
+          result.description.captions
+            .filter(caption => caption && typeof caption.confidence === 'number' && caption.confidence > 0.5)
+            .forEach(caption => {
+              if (caption.text) {
+                caption.text.toLowerCase().split(' ').forEach(word => {
+                  if (word.length > 3) {
+                    allTags.add(word);
+                  }
+                });
+              }
+            });
+        }
 
         // Filter tags yang relevan dengan makanan
-        const foodTags = tags.filter(tag => {
-          const name = tag.name.toLowerCase();
+        const foodRelatedTags = Array.from(allTags).filter(tag => {
+          const tagLower = tag.toLowerCase();
           return (
-            name.includes('food') ||
-            name.includes('ingredient') ||
-            name.includes('vegetable') ||
-            name.includes('fruit') ||
-            name.includes('meat') ||
-            name.includes('spice') ||
-            name.includes('herb') ||
-            name.includes('dish') ||
-            name.includes('meal') ||
-            name.includes('cuisine') ||
-            name.includes('cooking') ||
-            name.includes('kitchen') ||
-            name.includes('recipe')
+            tagLower.includes('food') ||
+            tagLower.includes('makanan') ||
+            tagLower.includes('ingredient') ||
+            tagLower.includes('bahan') ||
+            tagLower.includes('vegetable') ||
+            tagLower.includes('sayur') ||
+            tagLower.includes('fruit') ||
+            tagLower.includes('buah') ||
+            tagLower.includes('meat') ||
+            tagLower.includes('daging') ||
+            tagLower.includes('spice') ||
+            tagLower.includes('rempah') ||
+            tagLower.includes('herb') ||
+            tagLower.includes('bumbu')
           );
         });
 
-        console.log('Processed food tags:', foodTags);
-
-        if (foodTags.length === 0) {
-          console.warn('No food-related tags found in the image');
-        }
-
-        return foodTags;
+        console.log('Analysis complete. Found tags:', foodRelatedTags);
+        return foodRelatedTags;
 
       } catch (error) {
         lastError = error as Error;
@@ -131,14 +145,11 @@ export async function analyzeImage(base64Image: string): Promise<AnalysisResult[
     }
 
     // Jika semua percobaan gagal
-    console.error('All attempts failed:', lastError);
-    throw new Error(`Azure Vision API Error after ${maxAttempts} attempts: ${lastError?.message}`);
+    console.error('All analysis attempts failed:', lastError);
+    throw new Error(`Failed to analyze image after ${maxAttempts} attempts: ${lastError?.message}`);
 
   } catch (error) {
-    console.error('Final error:', error);
-    if (error instanceof Error) {
-      throw new Error(`Azure Vision API Error: ${error.message}`);
-    }
-    throw new Error('Failed to analyze image');
+    console.error('Final error in analyzeImage:', error);
+    throw error;
   }
 }

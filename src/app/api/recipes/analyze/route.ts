@@ -5,8 +5,14 @@ import { cookies } from 'next/headers';
 import { Database } from '@/lib/database.types';
 
 export async function POST(request: Request) {
+  console.log('Starting image analysis endpoint...');
+  
   try {
     // Validasi environment variables
+    console.log('Checking environment variables...');
+    console.log('Vision Key exists:', !!process.env.AZURE_COMPUTER_VISION_KEY);
+    console.log('Vision Endpoint:', process.env.AZURE_COMPUTER_VISION_ENDPOINT);
+    
     if (!process.env.AZURE_COMPUTER_VISION_KEY || !process.env.AZURE_COMPUTER_VISION_ENDPOINT) {
       console.error('Azure Computer Vision configuration is missing');
       return NextResponse.json(
@@ -16,8 +22,10 @@ export async function POST(request: Request) {
     }
 
     // Autentikasi
+    console.log('Initializing Supabase client...');
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
+    console.log('Checking authentication...');
     const { data: { session }, error: authError } = await supabase.auth.getSession();
     if (authError) {
       console.error('Authentication error:', authError);
@@ -28,25 +36,37 @@ export async function POST(request: Request) {
     }
     
     if (!session) {
+      console.log('No active session found');
       return NextResponse.json(
         { error: 'Silakan login terlebih dahulu' },
         { status: 401 }
       );
     }
 
+    console.log('User authenticated:', session.user.id);
+
     // Validasi request
+    console.log('Processing form data...');
     const formData = await request.formData();
     const image = formData.get('image') as File;
     
     if (!image) {
+      console.error('No image found in request');
       return NextResponse.json(
         { error: 'Tidak ada gambar yang diunggah' },
         { status: 400 }
       );
     }
 
+    console.log('Image received:', {
+      type: image.type,
+      size: image.size,
+      name: image.name
+    });
+
     // Validasi tipe file
     if (!image.type.startsWith('image/')) {
+      console.error('Invalid file type:', image.type);
       return NextResponse.json(
         { error: 'Format file tidak valid. Harap unggah file gambar.' },
         { status: 400 }
@@ -54,14 +74,19 @@ export async function POST(request: Request) {
     }
 
     // Convert image to base64
+    console.log('Converting image to base64...');
     const buffer = Buffer.from(await image.arrayBuffer());
     const base64Image = buffer.toString('base64');
+    console.log('Image converted to base64, length:', base64Image.length);
 
     // Analyze image
     try {
+      console.log('Starting image analysis...');
       const ingredients = await analyzeImage(base64Image);
+      console.log('Analysis complete. Ingredients found:', ingredients);
 
       // Save analysis result
+      console.log('Saving analysis results to database...');
       const { error: dbError } = await supabase
         .from('image_analysis')
         .insert({
@@ -79,6 +104,7 @@ export async function POST(request: Request) {
         );
       }
 
+      console.log('Analysis saved successfully');
       return NextResponse.json({ 
         success: true,
         data: {
