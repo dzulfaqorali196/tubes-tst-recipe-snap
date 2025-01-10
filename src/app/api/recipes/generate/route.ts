@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
+const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY as string;
+const RECIPE_API_URL = process.env.NEXT_PUBLIC_RECIPE_API_URL as string;
+
+if (!RECIPE_API_KEY || !RECIPE_API_URL) {
+  throw new Error('Recipe API configuration is missing');
+}
+
 export async function POST(request: Request) {
   let ingredients: string[] = [];
   
@@ -17,13 +24,14 @@ export async function POST(request: Request) {
 
     console.log('Generating recipes for ingredients:', ingredients);
 
-    // Pastikan untuk menggunakan API external
+    // Pastikan untuk menggunakan API external dengan API Key
     const response = await axios.post(
-      'https://smart-health-tst.up.railway.app/api/recipes',
+      RECIPE_API_URL,
       { ingredients },
       {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-API-Key': RECIPE_API_KEY
         }
       }
     );

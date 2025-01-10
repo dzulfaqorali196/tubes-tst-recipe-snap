@@ -5,16 +5,10 @@ export interface User {
   }
   
   export interface Recipe {
-    id: string;
     name: string;
-    description?: string;
+    description: string;
     ingredients: string[];
     instructions: string[];
-    image?: string;
-    cookTime?: string;
-    servings?: number;
-    difficulty?: string;
-    cuisine?: string;
   }
   
   export interface AnalyzedIngredient {
