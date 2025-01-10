@@ -31,7 +31,7 @@ export default function AnalysisResults({ labels }: AnalysisResultsProps) {
 
       try {
         const generatedRecipes = await analyzeAndGenerateRecipes(labels);
-        // Results will be saved to context by ImageUploader
+        console.log('Generated recipes in component:', generatedRecipes);
       } catch (err: any) {
         setError(err.message || 'Failed to generate recipes');
         toast.error(err.message || 'Failed to generate recipes');
@@ -59,7 +59,12 @@ export default function AnalysisResults({ labels }: AnalysisResultsProps) {
     );
   }
 
-  if (!analysisResults) return null;
+  if (!analysisResults) {
+    console.log('No analysis results available');
+    return null;
+  }
+
+  console.log('Rendering analysis results:', analysisResults);
 
   return (
     <div className="p-4">
@@ -71,12 +76,14 @@ export default function AnalysisResults({ labels }: AnalysisResultsProps) {
       </ul>
 
       <h2 className="text-2xl font-bold mb-4 text-black">Recommended Recipes:</h2>
-      {analysisResults.recipes.length > 0 ? (
+      {analysisResults.recipes && analysisResults.recipes.length > 0 ? (
         <div className="space-y-6">
           {analysisResults.recipes.map((recipe: Recipe, index) => (
             <div key={index} className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-semibold mb-2 text-black">{recipe.name}</h3>
-              <p className="text-black mb-4">{recipe.description}</p>
+              {recipe.description && (
+                <p className="text-black mb-4">{recipe.description}</p>
+              )}
               
               <h4 className="font-semibold mb-2 text-black">Ingredients:</h4>
               <ul className="list-disc list-inside mb-4">
@@ -85,7 +92,7 @@ export default function AnalysisResults({ labels }: AnalysisResultsProps) {
                 ))}
               </ul>
 
-              {recipe.instructions && (
+              {recipe.instructions && recipe.instructions.length > 0 && (
                 <>
                   <h4 className="font-semibold mb-2 text-black">Instructions:</h4>
                   <ol className="list-decimal list-inside">

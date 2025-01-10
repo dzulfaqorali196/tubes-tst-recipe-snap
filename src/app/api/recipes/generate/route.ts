@@ -27,11 +27,24 @@ export async function POST(request: Request) {
       }
     );
 
-    console.log('Recipe API response:', response.data);
+    console.log('Recipe API raw response:', response.data);
+
+    // Format response data
+    const recipes = Array.isArray(response.data) ? response.data : [response.data];
+    
+    // Pastikan setiap resep memiliki format yang benar
+    const formattedRecipes = recipes.map(recipe => ({
+      name: recipe.name || 'Untitled Recipe',
+      description: recipe.description || '',
+      ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+      instructions: Array.isArray(recipe.instructions) ? recipe.instructions : []
+    }));
+
+    console.log('Formatted recipes:', formattedRecipes);
 
     return NextResponse.json({
       success: true,
-      recipes: response.data
+      recipes: formattedRecipes
     });
   } catch (error: any) {
     console.error('Recipe Generation Error:', error.response?.data || error.message);
