@@ -34,6 +34,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      console.log('File selected:', file.name);
       setSelectedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
       setShowResults(false);
@@ -45,6 +46,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
     if (file) {
+      console.log('File dropped:', file.name);
       setSelectedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
       setShowResults(false);
@@ -57,23 +59,11 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
   };
 
   const handleRemoveImage = () => {
+    console.log('Removing image');
     clearAnalysis();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const handleError = (error: any) => {
-    console.error('Error during analysis:', error);
-    
-    // Handle CORS error
-    if (error.message?.includes('CORS')) {
-      toast.error('Terjadi masalah koneksi ke server resep. Mohon coba lagi nanti.');
-      return;
-    }
-
-    // Handle other errors
-    toast.error(error.message || 'Terjadi kesalahan saat menganalisis gambar');
   };
 
   const handleUpload = async () => {
@@ -96,13 +86,16 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
         body: formData,
       });
 
+      console.log('Vision API response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Vision API error:', errorData);
         throw new Error(errorData.error || 'Gagal menganalisis gambar');
       }
 
       const data = await response.json();
-      console.log('Vision API response:', data);
+      console.log('Vision API response data:', data);
 
       if (!data.success || !data.data) {
         throw new Error('Tidak ada hasil analisis yang diterima');
@@ -110,22 +103,26 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
 
       const { ingredients } = data.data;
       const detectedLabels = ingredients.map((ing: any) => ing.name);
+      console.log('Detected labels:', detectedLabels);
       setLabels(detectedLabels);
 
       // Generate recipes
+      console.log('Generating recipes...');
       const recipes = await analyzeAndGenerateRecipes(detectedLabels);
+      console.log('Generated recipes:', recipes);
 
       // Save analysis results to context
+      const timestamp = new Date().toISOString();
       setAnalysisResults({
         labels: detectedLabels,
         recipes,
-        timestamp: new Date().toISOString()
+        timestamp
       });
 
-      // Upload image to storage after successful analysis
+      // Upload image to storage
       console.log('Uploading image to Supabase storage...');
       const fileName = `${Date.now()}-${selectedImage.name}`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('food-images')
         .upload(`public/${fileName}`, selectedImage, {
           cacheControl: '3600',
@@ -137,16 +134,17 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
         throw new Error(`Error mengunggah gambar: ${uploadError.message}`);
       }
 
+      console.log('Upload successful:', uploadData);
+
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('food-images')
         .getPublicUrl(`public/${fileName}`);
 
-      console.log('Image uploaded successfully. Public URL:', publicUrl);
-
-      const timestamp = new Date().toISOString();
+      console.log('Image public URL:', publicUrl);
 
       // Save to image_analysis table
+      console.log('Saving to image_analysis...');
       const { error: analysisError } = await supabase
         .from('image_analysis')
         .insert({
@@ -163,6 +161,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       }
 
       // Save to recipe_history table
+      console.log('Saving to recipe_history...');
       const { error: historyError } = await supabase
         .from('recipe_history')
         .insert({
@@ -177,6 +176,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
         throw new Error(`Error menyimpan riwayat: ${historyError.message}`);
       }
 
+      console.log('All operations completed successfully');
       toast.success('Analisis gambar selesai');
       setShowResults(true);
       onAnalysisComplete?.();
