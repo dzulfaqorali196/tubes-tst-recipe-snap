@@ -16,12 +16,15 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/dashboard') ||
     request.nextUrl.pathname.startsWith('/profile')
   )) {
-    return NextResponse.redirect(new URL('/auth', request.url));
+    const redirectUrl = new URL('/auth', request.url);
+    redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+    return NextResponse.redirect(redirectUrl);
   }
 
   // Jika user sudah terautentikasi dan mencoba mengakses halaman auth
   if (session && request.nextUrl.pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo') || '/dashboard';
+    return NextResponse.redirect(new URL(redirectTo, request.url));
   }
 
   return res;

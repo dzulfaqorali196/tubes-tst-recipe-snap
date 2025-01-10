@@ -34,11 +34,17 @@ export default function UserButton() {
 
   const handleSignOut = async () => {
     try {
-      const supabase = createClientComponentClient();
-      await supabase.auth.signOut();
       setIsOpen(false);
-      router.push('/');
+      const supabase = createClientComponentClient();
+      
+      await supabase.auth.signOut();
+      
       toast.success('Berhasil keluar');
+      
+      setTimeout(() => {
+        router.push('/');
+        router.refresh();
+      }, 100);
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Gagal keluar dari sistem');
@@ -106,7 +112,6 @@ export default function UserButton() {
                   <button
                     onClick={() => {
                       item.onClick?.();
-                      setIsOpen(false);
                     }}
                     className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
                   >
