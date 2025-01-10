@@ -37,56 +37,72 @@ const ApiDocsPage = () => {
   const handleSendRequest = async () => {
     setIsLoading(true);
     try {
-      let url = selectedEndpoint;
+      // Gunakan sandbox endpoint untuk testing
+      const sandboxUrl = '/api/sandbox';
       
-      if (selectedMethod === 'GET' && requestBody) {
-        url += `?${requestBody}`;
-      }
-
-      const response = await fetch(url, {
+      const requestData = {
+        endpoint: selectedEndpoint,
         method: selectedMethod,
+        data: selectedMethod === 'POST' ? JSON.parse(requestBody) : requestBody
+      };
+
+      const response = await fetch(sandboxUrl, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: selectedMethod === 'POST' ? requestBody : undefined,
+        body: JSON.stringify(requestData)
       });
 
       const data = await response.json();
-      setResponseData(JSON.stringify(data, null, 2));
+      
+      // Format response untuk ditampilkan
+      const formattedResponse = {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      };
+
+      setResponseData(JSON.stringify(formattedResponse, null, 2));
     } catch (error) {
-      setResponseData(JSON.stringify({ error: 'Failed to fetch response' }, null, 2));
+      console.error('Request error:', error);
+      setResponseData(JSON.stringify({
+        error: 'Failed to fetch response',
+        details: error instanceof Error ? error.message : String(error)
+      }, null, 2));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getRequestBodyExample = (endpoint: string) => {
-    switch (endpoint) {
-      case '/api/recipes/generate':
-        return `{
-  "image": "File gambar dalam format base64",
-  "prompt": "string (optional) - Tambahan instruksi untuk analisis"
-}`;
-      case '/api/recipes':
-        return `// Tidak memerlukan request body
-// Query parameters (optional):
-// - page: number (default: 1)
-// - limit: number (default: 10)`;
-      case '/api/recipes/analyze':
-        return `{
-  "ingredients": ["bawang", "tomat", "cabai"],
-  "preferences": {
-    "cuisine": "Indonesian",     // optional
-    "dietary": "Vegetarian"      // optional
-  }
-}`;
-      default:
-        return '';
+  const endpoints = [
+    {
+      value: '/api/recipes/generate',
+      label: '/api/recipes/generate',
+      method: 'POST',
+      example: `{
+  "ingredients": ["bawang", "tomat", "cabai"]
+}`
+    },
+    {
+      value: '/api/recipes',
+      label: '/api/recipes',
+      method: 'GET',
+      example: 'page=1&limit=10'
     }
+  ];
+
+  const getRequestBodyExample = (endpoint: string) => {
+    const selectedEndpoint = endpoints.find(e => e.value === endpoint);
+    return selectedEndpoint?.example || '';
   };
 
   useEffect(() => {
-    setRequestBody(getRequestBodyExample(selectedEndpoint));
+    const endpoint = endpoints.find(e => e.value === selectedEndpoint);
+    if (endpoint) {
+      setSelectedMethod(endpoint.method);
+      setRequestBody(endpoint.example);
+    }
     setResponseData('');
   }, [selectedEndpoint]);
 
@@ -184,8 +200,7 @@ const ApiDocsPage = () => {
                   <td className="border p-4">
                     <pre className="whitespace-pre-wrap text-sm">
                       {`{
-  "image": "File gambar",
-  "prompt": "string (optional)"
+  "ingredients": ["bawang", "tomat", "cabai"]
 }`}
                     </pre>
                   </td>
@@ -246,9 +261,11 @@ const ApiDocsPage = () => {
                   className="w-full p-2 border rounded-md bg-white"
                   aria-label="Select API endpoint"
                 >
-                  <option value="/api/recipes/generate">/api/recipes/generate</option>
-                  <option value="/api/recipes">/api/recipes</option>
-                  <option value="/api/recipes/analyze">/api/recipes/analyze</option>
+                  {endpoints.map(endpoint => (
+                    <option key={endpoint.value} value={endpoint.value}>
+                      {endpoint.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -259,6 +276,7 @@ const ApiDocsPage = () => {
                   onChange={(e) => setSelectedMethod(e.target.value)}
                   className="w-full p-2 border rounded-md bg-white"
                   aria-label="Select HTTP method"
+                  disabled
                 >
                   <option value="GET">GET</option>
                   <option value="POST">POST</option>
