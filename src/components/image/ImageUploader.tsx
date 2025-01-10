@@ -67,22 +67,10 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
 
     setIsUploading(true);
     try {
-      // Upload image to storage
-      const fileName = `${Date.now()}-${selectedImage.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('food-images')
-        .upload(fileName, selectedImage);
-
-      if (uploadError) {
-        throw new Error(`Error mengunggah gambar: ${uploadError.message}`);
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('food-images')
-        .getPublicUrl(fileName);
-
-      // Call Vision API
+      console.log('Starting image upload process...');
+      
+      // Call Vision API first
+      console.log('Calling Vision API...');
       const formData = new FormData();
       formData.append('image', selectedImage);
 
@@ -97,22 +85,49 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       }
 
       const data = await response.json();
+      console.log('Vision API response:', data);
+
       if (!data.success || !data.data) {
         throw new Error('Tidak ada hasil analisis yang diterima');
       }
 
       const { ingredients } = data.data;
 
+      // Upload image to storage after successful analysis
+      console.log('Uploading image to Supabase storage...');
+      const fileName = `${Date.now()}-${selectedImage.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('food-images')
+        .upload(`public/${fileName}`, selectedImage, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Error mengunggah gambar: ${uploadError.message}`);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('food-images')
+        .getPublicUrl(`public/${fileName}`);
+
+      console.log('Image uploaded successfully. Public URL:', publicUrl);
+
       // Save analysis result
+      console.log('Saving analysis result to database...');
       const { error: dbError } = await supabase
         .from('image_analysis')
         .insert({
           user_id: user.id,
-          image_path: fileName,
+          image_path: `public/${fileName}`,
+          image_url: publicUrl,
           ingredients: ingredients,
         });
 
       if (dbError) {
+        console.error('Database error:', dbError);
         throw new Error(`Error menyimpan hasil: ${dbError.message}`);
       }
 
