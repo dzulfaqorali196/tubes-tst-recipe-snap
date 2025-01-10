@@ -82,8 +82,14 @@ export async function POST(request: Request) {
     // Analyze image
     try {
       console.log('Starting image analysis...');
-      const ingredients = await analyzeImage(base64Image);
-      console.log('Analysis complete. Ingredients found:', ingredients);
+      const tags = await analyzeImage(base64Image);
+      console.log('Analysis complete. Tags found:', tags);
+
+      // Transform tags into ingredients format
+      const ingredients = tags.map(tag => ({
+        name: tag,
+        confidence: 1.0
+      }));
 
       // Save analysis result
       console.log('Saving analysis results to database...');
@@ -91,9 +97,9 @@ export async function POST(request: Request) {
         .from('image_analysis')
         .insert({
           user_id: session.user.id,
-          ingredients,
+          ingredients: ingredients,
           created_at: new Date().toISOString(),
-          image_url: null // tambahkan field yang diperlukan sesuai schema
+          image_url: null
         });
 
       if (dbError) {
@@ -108,7 +114,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ 
         success: true,
         data: {
-          ingredients,
+          ingredients: ingredients,
           timestamp: new Date().toISOString()
         }
       });
@@ -118,10 +124,19 @@ export async function POST(request: Request) {
         ? analysisError.message 
         : 'Gagal menganalisis gambar';
       
+      // Tambahkan informasi error yang lebih detail untuk debugging
+      const errorDetails = {
+        message: errorMessage,
+        type: analysisError instanceof Error ? analysisError.name : typeof analysisError,
+        stack: analysisError instanceof Error ? analysisError.stack : undefined
+      };
+
+      console.error('Error details:', errorDetails);
+      
       return NextResponse.json(
         { 
           error: errorMessage,
-          details: process.env.NODE_ENV === 'development' ? analysisError : undefined
+          details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
         },
         { status: 500 }
       );

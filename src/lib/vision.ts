@@ -29,11 +29,6 @@ const computerVisionClient = new ComputerVisionClient(
   sanitizedEndpoint
 );
 
-interface AnalysisResult {
-  name: string;
-  confidence: number;
-}
-
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function analyzeImage(base64Image: string): Promise<string[]> {
@@ -60,12 +55,11 @@ export async function analyzeImage(base64Image: string): Promise<string[]> {
       try {
         console.log(`Analysis attempt ${attempts + 1} of ${maxAttempts}...`);
         
-        // Analisis gambar
+        // Analisis gambar dengan konfigurasi yang lebih sederhana
         const result = await computerVisionClient.analyzeImageInStream(
           imageBuffer,
           { 
-            visualFeatures: ['Tags', 'Objects', 'Description'],
-            language: 'id' // Gunakan Bahasa Indonesia
+            visualFeatures: ['Tags', 'Objects']
           }
         );
 
@@ -92,43 +86,38 @@ export async function analyzeImage(base64Image: string): Promise<string[]> {
             .forEach(obj => obj.object && allTags.add(obj.object.toLowerCase()));
         }
 
-        // Tambahkan dari description
-        if (result.description?.captions) {
-          result.description.captions
-            .filter(caption => caption && typeof caption.confidence === 'number' && caption.confidence > 0.5)
-            .forEach(caption => {
-              if (caption.text) {
-                caption.text.toLowerCase().split(' ').forEach(word => {
-                  if (word.length > 3) {
-                    allTags.add(word);
-                  }
-                });
-              }
-            });
-        }
-
-        // Filter tags yang relevan dengan makanan
+        // Filter tags yang relevan dengan makanan (dalam bahasa Inggris)
         const foodRelatedTags = Array.from(allTags).filter(tag => {
           const tagLower = tag.toLowerCase();
           return (
             tagLower.includes('food') ||
-            tagLower.includes('makanan') ||
             tagLower.includes('ingredient') ||
-            tagLower.includes('bahan') ||
             tagLower.includes('vegetable') ||
-            tagLower.includes('sayur') ||
+            tagLower.includes('vegetables') ||
             tagLower.includes('fruit') ||
-            tagLower.includes('buah') ||
+            tagLower.includes('fruits') ||
             tagLower.includes('meat') ||
-            tagLower.includes('daging') ||
             tagLower.includes('spice') ||
-            tagLower.includes('rempah') ||
+            tagLower.includes('spices') ||
             tagLower.includes('herb') ||
-            tagLower.includes('bumbu')
+            tagLower.includes('herbs') ||
+            tagLower.includes('cooking') ||
+            tagLower.includes('kitchen') ||
+            tagLower.includes('dish') ||
+            tagLower.includes('meal') ||
+            tagLower.includes('food') ||
+            tagLower.includes('cuisine')
           );
         });
 
         console.log('Analysis complete. Found tags:', foodRelatedTags);
+        
+        // Jika tidak ada tag makanan yang ditemukan, kembalikan semua tag
+        if (foodRelatedTags.length === 0) {
+          console.log('No food-related tags found, returning all tags');
+          return Array.from(allTags);
+        }
+
         return foodRelatedTags;
 
       } catch (error) {
