@@ -6,6 +6,7 @@ import { Upload, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContexts';
 import { useImage } from '@/contexts/ImageContext';
+import { analyzeAndGenerateRecipes } from '@/lib/services/recipes';
 import toast from 'react-hot-toast';
 import AnalysisResults from '../analysis/AnalysisResults';
 
@@ -22,7 +23,9 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
     showResults,
     setSelectedImage,
     setPreviewUrl,
-    setShowResults
+    setShowResults,
+    setAnalysisResults,
+    clearAnalysis
   } = useImage();
   const [isUploading, setIsUploading] = useState(false);
   const [labels, setLabels] = useState<string[]>([]);
@@ -34,6 +37,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       setSelectedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
       setShowResults(false);
+      clearAnalysis();
     }
   };
 
@@ -44,6 +48,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       setSelectedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
       setShowResults(false);
+      clearAnalysis();
     }
   };
 
@@ -52,10 +57,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
   };
 
   const handleRemoveImage = () => {
-    setSelectedImage(null);
-    setPreviewUrl(null);
-    setShowResults(false);
-    setLabels([]);
+    clearAnalysis();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -107,7 +109,18 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       }
 
       const { ingredients } = data.data;
-      setLabels(ingredients.map((ing: any) => ing.name));
+      const detectedLabels = ingredients.map((ing: any) => ing.name);
+      setLabels(detectedLabels);
+
+      // Generate recipes
+      const recipes = await analyzeAndGenerateRecipes(detectedLabels);
+
+      // Save analysis results to context
+      setAnalysisResults({
+        labels: detectedLabels,
+        recipes,
+        timestamp: new Date().toISOString()
+      });
 
       // Upload image to storage after successful analysis
       console.log('Uploading image to Supabase storage...');
@@ -131,20 +144,37 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
 
       console.log('Image uploaded successfully. Public URL:', publicUrl);
 
-      // Save analysis result
-      console.log('Saving analysis result to database...');
-      const { error: dbError } = await supabase
+      const timestamp = new Date().toISOString();
+
+      // Save to image_analysis table
+      const { error: analysisError } = await supabase
         .from('image_analysis')
         .insert({
           user_id: user.id,
           image_path: `public/${fileName}`,
           image_url: publicUrl,
           ingredients: ingredients,
+          created_at: timestamp
         });
 
-      if (dbError) {
-        console.error('Database error:', dbError);
-        throw new Error(`Error menyimpan hasil: ${dbError.message}`);
+      if (analysisError) {
+        console.error('Analysis save error:', analysisError);
+        throw new Error(`Error menyimpan analisis: ${analysisError.message}`);
+      }
+
+      // Save to recipe_history table
+      const { error: historyError } = await supabase
+        .from('recipe_history')
+        .insert({
+          user_id: user.id,
+          recipe_data: recipes,
+          ingredients: ingredients,
+          created_at: timestamp
+        });
+
+      if (historyError) {
+        console.error('History save error:', historyError);
+        throw new Error(`Error menyimpan riwayat: ${historyError.message}`);
       }
 
       toast.success('Analisis gambar selesai');
