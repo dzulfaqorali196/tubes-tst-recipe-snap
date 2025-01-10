@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# <div align="center">🍳 Recipe Snap 📸</div>
 
-## Getting Started
+<div align="center">
+  <h3>Aplikasi Pendeteksi Resep dari Gambar Makanan</h3>
+  <p>Dibuat oleh:</p>
+  <p><strong>Dzulfaqor A.D</strong></p>
+  <p><strong>18222017</strong></p>
+</div>
 
-First, run the development server:
+## 📖 Deskripsi
+Recipe Snap adalah aplikasi web yang memungkinkan pengguna untuk mendapatkan resep makanan hanya dengan mengunggah foto makanan. Aplikasi ini menggunakan teknologi AI Vision untuk mendeteksi makanan dalam gambar dan memberikan rekomendasi resep yang sesuai.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Fitur Utama
+- 📸 Upload foto makanan
+- 🤖 Deteksi makanan menggunakan AI Vision
+- 📝 Mendapatkan resep detail
+- 👤 Manajemen profil pengguna
+- 📱 Responsive design
+- 📊 Riwayat pencarian resep
+
+## 🛠 Teknologi yang Digunakan
+- **Frontend**: Next.js 13 dengan App Router
+- **Backend**: Next.js API Routes
+- **Database**: Supabase
+- **Authentication**: Supabase Auth
+- **AI Vision**: Azure Computer Vision
+- **Styling**: Tailwind CSS
+- **Deployment**: Railway
+- **Container**: Docker
+
+## 🔑 API yang Digunakan
+
+### 1. Azure Computer Vision API
+- **Endpoint**: `https://recipe-snap-vision.cognitiveservices.azure.com/`
+- **Fungsi**: Mendeteksi dan menganalisis gambar makanan
+- **Fitur**: Object detection, Image analysis
+
+### 2. Recipe API
+- **Endpoint**: `https://smart-health-tst.up.railway.app/api/recipes`
+- **Fungsi**: Menyediakan data resep makanan
+- **Fitur**: 
+  - Pencarian resep
+  - Detail resep
+  - Rekomendasi resep
+
+### 3. Supabase API
+- **URL**: `https://mshcrvetdqodotbllogr.supabase.co`
+- **Fungsi**: Database dan autentikasi
+- **Fitur**:
+  - User management
+  - Data storage
+  - Real-time updates
+
+## 🚀 Cara Menjalankan Aplikasi
+
+### Prerequisites
+- Node.js v18+
+- Docker (opsional)
+- npm atau yarn
+
+### Instalasi Lokal
+1. Clone repository
+   ```bash
+   git clone https://github.com/yourusername/recipe-snap.git
+   cd recipe-snap
+   ```
+
+2. Install dependencies
+   ```bash
+   npm install
+   # atau
+   yarn install
+   ```
+
+3. Setup environment variables
+   ```bash
+   cp .env.example .env.local
+   ```
+   Isi semua environment variables yang diperlukan
+
+4. Jalankan aplikasi
+   ```bash
+   npm run dev
+   # atau
+   yarn dev
+   ```
+
+### Menggunakan Docker
+1. Build image
+   ```bash
+   docker-compose build
+   ```
+
+2. Jalankan container
+   ```bash
+   docker-compose up
+   ```
+
+## 🌐 Deployment
+Aplikasi ini di-deploy menggunakan Railway dengan konfigurasi:
+- Production URL: https://tubes-tst-recipe-snap-production.up.railway.app
+- Automatic deployment dari branch main
+- Container-based deployment dengan Docker
+
+## 📁 Struktur Proyek
+```
+recipe-snap/
+├── src/
+│   ├── app/              # Next.js App Router
+│   ├── components/       # React components
+│   ├── lib/             # Utility functions
+│   ├── contexts/        # React contexts
+│   └── types/           # TypeScript types
+├── public/              # Static files
+├── Dockerfile          # Docker configuration
+├── docker-compose.yml  # Docker Compose config
+└── package.json        # Dependencies
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🤝 Kontribusi
+Jika Anda ingin berkontribusi pada proyek ini:
+1. Fork repository
+2. Buat branch baru
+3. Commit perubahan
+4. Push ke branch
+5. Buat Pull Request
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📝 Lisensi
+Proyek ini dilisensikan di bawah MIT License.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 👨‍💻 Developer
+- **Nama**: Dzulfaqor A.D
+- **NIM**: 18222017
+- **Institusi**: Institut Teknologi Bandung
+- **Mata Kuliah**: Teknologi Sistem Terintegrasi
