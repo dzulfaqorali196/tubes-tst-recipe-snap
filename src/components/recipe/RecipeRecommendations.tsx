@@ -91,65 +91,37 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
           'fresh', 'healthy', 'organic', 'group', 'staple'
         ];
 
-        const relevantIngredients = ingredients
+        // Hanya tampilkan hasil analisis dulu
+        const detectedIngredients = ingredients
           .filter(ing => ing.confidence > 0.7)
           .map(ing => {
             const name = ing.name.toLowerCase().trim();
-            // Bersihkan dari kata-kata umum
             let cleanName = name;
             excludedWords.forEach(word => {
               cleanName = cleanName.replace(word, '').trim();
             });
             return cleanName;
           })
-          .filter(name => name !== ''); // Hapus string kosong
+          .filter(name => name !== '');
 
         console.log('Bahan yang terdeteksi:', ingredients.map(ing => ing.name));
-        console.log('Bahan yang akan digunakan:', relevantIngredients);
+        console.log('Bahan yang akan ditampilkan:', detectedIngredients);
 
-        if (relevantIngredients.length === 0) {
+        if (detectedIngredients.length === 0) {
           throw new Error('Tidak dapat mengenali bahan makanan spesifik. Coba foto ulang dengan fokus pada bahan makanan.');
         }
 
-        // Panggil API external
-        const response = await axios.post(
-          RECIPE_API_URL,
-          { ingredients: relevantIngredients },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': RECIPE_API_KEY
-            }
-          }
-        );
-
-        console.log('API Response:', response.data);
-
-        if (!response.data || !response.data.recipes || !Array.isArray(response.data.recipes)) {
-          throw new Error('Tidak ada resep yang tersedia untuk bahan ini');
-        }
-
-        const recipesWithIds = response.data.recipes.map((recipe: Recipe) => ({
-          ...recipe,
-          id: uuidv4()
-        }));
-
-        if (recipesWithIds.length === 0) {
-          throw new Error('Tidak ada resep yang sesuai dengan bahan yang terdeteksi');
-        }
-
-        setRecipes(recipesWithIds);
-        await addToHistory(recipesWithIds[0], ingredients, user.id);
+        // Simpan hasil analisis tanpa generate resep dulu
         setAnalysisResults({
-          labels: relevantIngredients,
-          recipes: recipesWithIds,
+          labels: detectedIngredients,
+          recipes: [], // Kosong karena belum generate resep
           timestamp: new Date().toISOString()
         });
         setShowResults(true);
 
       } catch (err: any) {
-        console.error('Recipe Generation Error:', err);
-        const errorMessage = err.response?.data?.error || err.message || 'Gagal menghasilkan resep. Silakan coba lagi.';
+        console.error('Analysis Error:', err);
+        const errorMessage = err.response?.data?.error || err.message || 'Gagal menganalisis gambar. Silakan coba lagi.';
         setError(errorMessage);
         setShowResults(false);
       } finally {
@@ -160,11 +132,71 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
     fetchRecipes();
   }, [ingredients, user, analysisResults, showResults, setAnalysisResults, setShowResults]);
 
+  // Fungsi untuk generate resep berdasarkan bahan yang dipilih
+  const handleGenerateRecipe = async (selectedIngredients: string[]) => {
+    if (!selectedIngredients.length) {
+      toast.error('Pilih bahan terlebih dahulu');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        RECIPE_API_URL,
+        { ingredients: selectedIngredients },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': RECIPE_API_KEY
+          }
+        }
+      );
+
+      console.log('API Response:', response.data);
+
+      if (!response.data || !response.data.recipes || !Array.isArray(response.data.recipes)) {
+        throw new Error('Tidak ada resep yang tersedia untuk bahan ini');
+      }
+
+      const recipesWithIds = response.data.recipes.map((recipe: Recipe) => ({
+        ...recipe,
+        id: uuidv4()
+      }));
+
+      if (recipesWithIds.length === 0) {
+        throw new Error('Tidak ada resep yang sesuai dengan bahan yang dipilih');
+      }
+
+      setRecipes(recipesWithIds);
+      if (user) {
+        await addToHistory(recipesWithIds[0], ingredients, user.id);
+      }
+      
+      // Update analysis results dengan resep baru
+      if (analysisResults) {
+        setAnalysisResults({
+          ...analysisResults,
+          recipes: recipesWithIds
+        });
+      }
+
+      toast.success('Resep berhasil digenerate!');
+    } catch (err: any) {
+      console.error('Recipe Generation Error:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Gagal menghasilkan resep. Silakan coba lagi.';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-        <span className="ml-2 text-sm text-gray-600">Mengambil rekomendasi resep...</span>
+        <span className="ml-2 text-sm text-gray-600">
+          {recipes.length ? 'Mengambil rekomendasi resep...' : 'Menganalisis bahan...'}
+        </span>
       </div>
     );
   }
@@ -177,6 +209,45 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
     );
   }
 
+  // Tampilkan hasil analisis dan form pemilihan bahan
+  if (analysisResults && !recipes.length) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Bahan Terdeteksi:</h2>
+          <div className="space-y-4">
+            {analysisResults.labels.map((label, index) => (
+              <div key={index} className="flex items-center">
+                <input
+                  type="checkbox"
+                  id={`ingredient-${index}`}
+                  className="mr-2"
+                  onChange={(e) => {
+                    const selected = analysisResults.labels.filter((_, i) => {
+                      if (i === index) return e.target.checked;
+                      const checkbox = document.getElementById(`ingredient-${i}`) as HTMLInputElement;
+                      return checkbox?.checked || false;
+                    });
+                    if (selected.length > 0) {
+                      handleGenerateRecipe(selected);
+                    }
+                  }}
+                />
+                <label htmlFor={`ingredient-${index}`} className="text-gray-700">
+                  {label}
+                </label>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-gray-500 mt-2">
+            Pilih bahan yang ingin digunakan untuk generate resep
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Tampilkan resep jika sudah digenerate
   if (!recipes.length) {
     return (
       <div className="text-center py-8">
