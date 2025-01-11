@@ -466,9 +466,6 @@ Jika Anda ingin berkontribusi pada proyek ini:
 4. Push ke branch
 5. Buat Pull Request
 
-## 📝 Lisensi
-Proyek ini dilisensikan di bawah MIT License.
-
 ## 👨‍💻 Developer
 - **Nama**: Dzulfaqor A.D
 - **NIM**: 18222017
