@@ -20,6 +20,29 @@ if (!RECIPE_API_KEY || !RECIPE_API_URL) {
   throw new Error('Recipe API configuration is missing');
 }
 
+// Fungsi yang bisa digunakan komponen lain
+export async function generateRecipes(ingredients: string[]): Promise<Recipe[]> {
+  const response = await axios.post(
+    RECIPE_API_URL,
+    { ingredients },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': RECIPE_API_KEY
+      }
+    }
+  );
+
+  if (!response.data || !response.data.recipes || !Array.isArray(response.data.recipes)) {
+    throw new Error('Format response tidak valid');
+  }
+
+  return response.data.recipes.map((recipe: Recipe) => ({
+    ...recipe,
+    id: uuidv4()
+  }));
+}
+
 interface RecipeRecommendationsProps {
   ingredients: { name: string; confidence: number }[];
 }

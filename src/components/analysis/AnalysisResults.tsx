@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { analyzeAndGenerateRecipes } from '@/lib/services/recipes';
+import { generateRecipes } from '@/components/recipe/RecipeRecommendations';
 import { useImage } from '@/contexts/ImageContext';
 import toast from 'react-hot-toast';
 
@@ -30,7 +30,7 @@ export default function AnalysisResults({ labels }: AnalysisResultsProps) {
       setError(null);
 
       try {
-        const generatedRecipes = await analyzeAndGenerateRecipes(labels);
+        const generatedRecipes = await generateRecipes(labels);
         console.log('Generated recipes in component:', generatedRecipes);
       } catch (err: any) {
         setError(err.message || 'Failed to generate recipes');

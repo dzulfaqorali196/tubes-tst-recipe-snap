@@ -6,7 +6,7 @@ import { Upload, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContexts';
 import { useImage } from '@/contexts/ImageContext';
-import { analyzeAndGenerateRecipes } from '@/lib/services/recipes';
+import { generateRecipes } from '@/components/recipe/RecipeRecommendations';
 import toast from 'react-hot-toast';
 import AnalysisResults from '../analysis/AnalysisResults';
 
@@ -154,7 +154,7 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       console.log('Generating recipes...');
       let recipes;
       try {
-        recipes = await analyzeAndGenerateRecipes(detectedLabels);
+        recipes = await generateRecipes(detectedLabels);
         console.log('Generated recipes:', recipes);
       } catch (recipeError) {
         console.error('Recipe generation error:', recipeError);
