@@ -53,7 +53,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
   const [error, setError] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const { user } = useAuth();
-  const { showResults, analysisResults, setAnalysisResults } = useImage();
+  const { showResults, analysisResults, setAnalysisResults, setShowResults } = useImage();
 
   // Fungsi untuk berbagi resep
   const handleShare = async (recipe: Recipe) => {
@@ -84,17 +84,33 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
       setError(null);
 
       try {
+        // Filter bahan dengan confidence tinggi dan hapus kata-kata umum
         const relevantIngredients = ingredients
-          .filter(ing => ing.confidence > 0.9)
-          .map(ing => ing.name.toLowerCase())
-          .filter(name => 
-            !['food', 'ingredient', 'natural foods', 'local food', 'whole food', 'superfood', 'vegetarian food'].includes(name)
-          );
+          .filter(ing => ing.confidence > 0.7) // Turunkan threshold confidence
+          .map(ing => ing.name.toLowerCase().trim())
+          .filter(name => {
+            // Daftar kata-kata yang akan difilter
+            const excludedWords = [
+              'food', 'ingredient', 'natural foods', 'local food', 
+              'whole food', 'superfood', 'vegetarian food', 'diet food',
+              'produce', 'natural', 'fresh', 'healthy', 'organic',
+              'food group', 'staple food'
+            ];
+            
+            // Jika nama bahan mengandung kata yang difilter, cek apakah ada kata spesifik
+            if (excludedWords.some(word => name.includes(word))) {
+              // Jika mengandung kata spesifik seperti 'vegetable', 'fruit', dll, tetap masukkan
+              const specificWords = ['vegetable', 'fruit', 'meat', 'fish', 'spice', 'herb'];
+              return specificWords.some(word => name.includes(word));
+            }
+            return true;
+          });
 
+        console.log('Bahan yang terdeteksi:', ingredients.map(ing => ing.name));
         console.log('Bahan yang akan digunakan:', relevantIngredients);
 
         if (relevantIngredients.length === 0) {
-          throw new Error('Tidak dapat mengenali bahan makanan spesifik');
+          throw new Error('Tidak dapat mengenali bahan makanan spesifik. Pastikan gambar menunjukkan bahan makanan dengan jelas.');
         }
 
         // Panggil API external langsung
@@ -121,7 +137,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
         }));
 
         if (recipesWithIds.length === 0) {
-          throw new Error('Tidak ada resep yang ditemukan');
+          throw new Error('Tidak ada resep yang ditemukan untuk bahan-bahan ini');
         }
 
         setRecipes(recipesWithIds);
@@ -135,6 +151,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
       } catch (err: any) {
         console.error('Recipe Generation Error:', err);
         setError(err.message || 'Gagal menghasilkan resep. Silakan coba lagi.');
+        setShowResults(false); // Reset tampilan jika error
       } finally {
         setIsLoading(false);
       }

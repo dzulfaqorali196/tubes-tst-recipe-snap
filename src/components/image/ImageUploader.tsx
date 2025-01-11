@@ -156,12 +156,13 @@ export default function ImageUploader({ onAnalysisComplete }: ImageUploaderProps
       try {
         recipes = await generateRecipes(detectedLabels);
         console.log('Generated recipes:', recipes);
+        
+        if (!recipes || recipes.length === 0) {
+          throw new Error('Tidak ada resep yang ditemukan untuk bahan-bahan ini');
+        }
       } catch (recipeError) {
         console.error('Recipe generation error:', recipeError);
-        throw new Error('Gagal menghasilkan resep dari bahan yang terdeteksi');
-      }
-
-      if (!recipes || recipes.length === 0) {
+        setShowResults(false);
         throw new Error('Tidak ada resep yang ditemukan untuk bahan-bahan ini');
       }
 
