@@ -84,36 +84,34 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
       setError(null);
 
       try {
-        // Filter bahan dengan confidence tinggi dan hapus kata-kata umum
+        // Filter bahan berdasarkan confidence dan bersihkan dari kata-kata umum
+        const excludedWords = [
+          'food', 'ingredient', 'natural', 'local', 'whole', 
+          'super', 'vegetarian', 'diet', 'accessory', 'produce', 
+          'fresh', 'healthy', 'organic', 'group', 'staple'
+        ];
+
         const relevantIngredients = ingredients
-          .filter(ing => ing.confidence > 0.7) // Turunkan threshold confidence
-          .map(ing => ing.name.toLowerCase().trim())
-          .filter(name => {
-            // Daftar kata-kata yang akan difilter
-            const excludedWords = [
-              'food', 'ingredient', 'natural foods', 'local food', 
-              'whole food', 'superfood', 'vegetarian food', 'diet food',
-              'produce', 'natural', 'fresh', 'healthy', 'organic',
-              'food group', 'staple food'
-            ];
-            
-            // Jika nama bahan mengandung kata yang difilter, cek apakah ada kata spesifik
-            if (excludedWords.some(word => name.includes(word))) {
-              // Jika mengandung kata spesifik seperti 'vegetable', 'fruit', dll, tetap masukkan
-              const specificWords = ['vegetable', 'fruit', 'meat', 'fish', 'spice', 'herb'];
-              return specificWords.some(word => name.includes(word));
-            }
-            return true;
-          });
+          .filter(ing => ing.confidence > 0.7)
+          .map(ing => {
+            const name = ing.name.toLowerCase().trim();
+            // Bersihkan dari kata-kata umum
+            let cleanName = name;
+            excludedWords.forEach(word => {
+              cleanName = cleanName.replace(word, '').trim();
+            });
+            return cleanName;
+          })
+          .filter(name => name !== ''); // Hapus string kosong
 
         console.log('Bahan yang terdeteksi:', ingredients.map(ing => ing.name));
         console.log('Bahan yang akan digunakan:', relevantIngredients);
 
         if (relevantIngredients.length === 0) {
-          throw new Error('Tidak dapat mengenali bahan makanan spesifik. Pastikan gambar menunjukkan bahan makanan dengan jelas.');
+          throw new Error('Tidak dapat mengenali bahan makanan spesifik. Coba foto ulang dengan fokus pada bahan makanan.');
         }
 
-        // Panggil API external langsung
+        // Panggil API external
         const response = await axios.post(
           RECIPE_API_URL,
           { ingredients: relevantIngredients },
@@ -128,7 +126,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
         console.log('API Response:', response.data);
 
         if (!response.data || !response.data.recipes || !Array.isArray(response.data.recipes)) {
-          throw new Error('Format response tidak valid');
+          throw new Error('Tidak ada resep yang tersedia untuk bahan ini');
         }
 
         const recipesWithIds = response.data.recipes.map((recipe: Recipe) => ({
@@ -137,7 +135,7 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
         }));
 
         if (recipesWithIds.length === 0) {
-          throw new Error('Tidak ada resep yang ditemukan untuk bahan-bahan ini');
+          throw new Error('Tidak ada resep yang sesuai dengan bahan yang terdeteksi');
         }
 
         setRecipes(recipesWithIds);
@@ -147,18 +145,20 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
           recipes: recipesWithIds,
           timestamp: new Date().toISOString()
         });
+        setShowResults(true);
 
       } catch (err: any) {
         console.error('Recipe Generation Error:', err);
-        setError(err.message || 'Gagal menghasilkan resep. Silakan coba lagi.');
-        setShowResults(false); // Reset tampilan jika error
+        const errorMessage = err.response?.data?.error || err.message || 'Gagal menghasilkan resep. Silakan coba lagi.';
+        setError(errorMessage);
+        setShowResults(false);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchRecipes();
-  }, [ingredients, user, analysisResults, showResults, setAnalysisResults]);
+  }, [ingredients, user, analysisResults, showResults, setAnalysisResults, setShowResults]);
 
   if (isLoading) {
     return (
