@@ -13,8 +13,12 @@ import { useImage } from '@/contexts/ImageContext';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 
-const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY;
-const RECIPE_API_URL = 'https://smart-health-tst.up.railway.app/api/recipes';
+const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY as string;
+const RECIPE_API_URL = process.env.NEXT_PUBLIC_RECIPE_API_URL as string;
+
+if (!RECIPE_API_KEY || !RECIPE_API_URL) {
+  throw new Error('Recipe API configuration is missing');
+}
 
 interface RecipeRecommendationsProps {
   ingredients: { name: string; confidence: number }[];
@@ -54,6 +58,8 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
       if (!ingredients.length || !user || analysisResults || !showResults) return;
 
       setIsLoading(true);
+      setError(null);
+
       try {
         const relevantIngredients = ingredients
           .filter(ing => ing.confidence > 0.9)
@@ -65,12 +71,11 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
         console.log('Bahan yang akan digunakan:', relevantIngredients);
 
         if (relevantIngredients.length === 0) {
-          setError('Tidak dapat mengenali bahan makanan spesifik');
-          return;
+          throw new Error('Tidak dapat mengenali bahan makanan spesifik');
         }
 
-        // Gunakan API external langsung
-        const { data } = await axios.post(
+        // Panggil API external langsung
+        const response = await axios.post(
           RECIPE_API_URL,
           { ingredients: relevantIngredients },
           {
@@ -81,25 +86,32 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
           }
         );
 
-        if (data.recipes && data.recipes.length > 0) {
-          const recipesWithIds = data.recipes.map((recipe: Recipe) => ({
-            ...recipe,
-            id: uuidv4()
-          }));
-          
-          setRecipes(recipesWithIds);
-          await addToHistory(recipesWithIds[0], ingredients, user.id);
-          setAnalysisResults({
-            labels: relevantIngredients,
-            recipes: recipesWithIds,
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          setError('Tidak ada rekomendasi resep untuk bahan-bahan ini');
+        console.log('API Response:', response.data);
+
+        if (!response.data || !response.data.recipes || !Array.isArray(response.data.recipes)) {
+          throw new Error('Format response tidak valid');
         }
-      } catch (err) {
-        console.error('Recipe error:', err);
-        setError('Gagal mengambil rekomendasi resep');
+
+        const recipesWithIds = response.data.recipes.map((recipe: Recipe) => ({
+          ...recipe,
+          id: uuidv4()
+        }));
+
+        if (recipesWithIds.length === 0) {
+          throw new Error('Tidak ada resep yang ditemukan');
+        }
+
+        setRecipes(recipesWithIds);
+        await addToHistory(recipesWithIds[0], ingredients, user.id);
+        setAnalysisResults({
+          labels: relevantIngredients,
+          recipes: recipesWithIds,
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (err: any) {
+        console.error('Recipe Generation Error:', err);
+        setError(err.message || 'Gagal menghasilkan resep. Silakan coba lagi.');
       } finally {
         setIsLoading(false);
       }
