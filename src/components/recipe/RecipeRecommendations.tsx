@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { generateRecipes } from '@/lib/services/recipes';
+import axios from 'axios';
 import { Recipe } from '@/types';
 import { addToHistory } from '@/lib/services/history';
 import { statsEventEmitter } from '@/lib/services/stats';
@@ -12,6 +12,9 @@ import { useAuth } from '@/contexts/AuthContexts';
 import { useImage } from '@/contexts/ImageContext';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
+
+const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY;
+const RECIPE_API_URL = 'https://smart-health-tst.up.railway.app/api/recipes';
 
 interface RecipeRecommendationsProps {
   ingredients: { name: string; confidence: number }[];
@@ -66,10 +69,20 @@ export default function RecipeRecommendations({ ingredients }: RecipeRecommendat
           return;
         }
 
-        const generatedRecipes = await generateRecipes(relevantIngredients);
-        if (generatedRecipes.length > 0) {
-          // Tambahkan ID ke setiap resep
-          const recipesWithIds = generatedRecipes.map(recipe => ({
+        // Gunakan API external langsung
+        const { data } = await axios.post(
+          RECIPE_API_URL,
+          { ingredients: relevantIngredients },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': RECIPE_API_KEY
+            }
+          }
+        );
+
+        if (data.recipes && data.recipes.length > 0) {
+          const recipesWithIds = data.recipes.map((recipe: Recipe) => ({
             ...recipe,
             id: uuidv4()
           }));

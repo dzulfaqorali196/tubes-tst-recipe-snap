@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY as string;
-const RECIPE_API_URL = process.env.NEXT_PUBLIC_RECIPE_API_URL as string;
+const RECIPE_API_KEY = process.env.NEXT_PUBLIC_RECIPE_API_KEY;
+const RECIPE_API_URL = 'https://smart-health-tst.up.railway.app/api/recipes';
 
-if (!RECIPE_API_KEY || !RECIPE_API_URL) {
+if (!RECIPE_API_KEY) {
   throw new Error('Recipe API configuration is missing');
 }
 
@@ -33,25 +33,13 @@ export async function POST(request: Request) {
       }
     );
 
-    console.log('Recipe API response:', response.data);
-
-    if (!response.data || !response.data.recipes) {
-      throw new Error('Invalid response format from recipe API');
-    }
-
-    return NextResponse.json({
-      success: true,
-      recipes: response.data.recipes
-    });
+    // Langsung return data dari API external
+    return NextResponse.json(response.data);
 
   } catch (error: any) {
     console.error('Recipe Generation Error:', error.response?.data || error.message);
-    
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Gagal menghasilkan resep. Silakan coba lagi.' 
-      },
+      { error: 'Gagal menghasilkan resep. Silakan coba lagi.' },
       { status: 500 }
     );
   }
