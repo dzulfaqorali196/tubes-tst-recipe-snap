@@ -17,7 +17,7 @@ export async function generateRecipes(ingredients: string[]): Promise<Recipe[]> 
     });
     console.log('Recipe API response:', data);
     
-    if (!data.success || !Array.isArray(data.recipes)) {
+    if (!data.success || !data.recipes) {
       console.error('Invalid recipe data format:', data);
       throw new Error('Format resep tidak valid');
     }
@@ -31,15 +31,22 @@ export async function generateRecipes(ingredients: string[]): Promise<Recipe[]> 
 
 export async function analyzeAndGenerateRecipes(labels: string[]): Promise<Recipe[]> {
   try {
-    // Filter out non-food labels and prepare ingredients
-    const foodLabels = labels.filter(label => 
-      !['food', 'ingredient', 'natural foods', 'local food', 'whole food', 'superfood', 'vegetarian food'].includes(label.toLowerCase())
-    );
+    // Daftar kata-kata yang akan difilter keluar (kata-kata yang terlalu umum)
+    const excludedLabels = [
+      'food', 'ingredient', 'natural foods', 'local food', 'whole food', 
+      'superfood', 'vegetarian food', 'diet food', 'accessory fruit',
+      'produce', 'natural', 'fresh', 'healthy', 'organic'
+    ];
+
+    // Filter label yang terlalu umum dan ubah ke lowercase untuk konsistensi
+    const foodLabels = labels
+      .map(label => label.toLowerCase().trim())
+      .filter(label => !excludedLabels.includes(label));
 
     console.log('Filtered food labels:', foodLabels);
 
     if (foodLabels.length === 0) {
-      throw new Error('Tidak dapat mendeteksi bahan makanan spesifik dalam gambar');
+      throw new Error('Tidak dapat mendeteksi bahan makanan spesifik dalam gambar. Pastikan gambar menunjukkan bahan makanan dengan jelas.');
     }
 
     // Generate recipes based on detected food items
